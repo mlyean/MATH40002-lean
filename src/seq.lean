@@ -65,26 +65,22 @@ end
 -- Example 3.5
 example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   intros ε hε,
-  have hε' : 0 < 4 / ε := begin
-    refine div_pos _ hε,
-    norm_num,
-  end,
+  have hε' : 0 < 4 / ε := div_pos (by norm_num) hε,
   cases exists_nat_gt (4 / ε) with N hN,
   existsi N + 1,
   intros n hn,
   simp,
-  have hN' : 0 < 1 + (↑N : ℝ) := by { norm_cast, norm_num },
-  have hn' : 0 < 1 + (↑n : ℝ) := by { norm_cast, norm_num },
+  have hN' : 0 < 1 + (↑N : ℝ) := by { norm_cast, exact nat.zero_lt_one_add N },
+  have hn' : 0 < 1 + (↑n : ℝ) := by { norm_cast, exact nat.zero_lt_one_add n },
   rw abs_of_pos,
   { have hn'' : 1 + (↑n : ℝ) ≠ 0 := ne_of_gt hn',
     calc
       -(1 : ℝ) + (5 + ↑n) / (1 + ↑n) = 4 / (1 + ↑n) : by { symmetry, rw [div_eq_iff hn'', add_mul, div_mul_cancel _ hn''], ring }
-        ... < 4 / (1 + ↑N) : by {rw div_lt_div_left _ hn' hN', norm_cast, exact add_lt_add_left hn 1, norm_cast, exact nat.succ_pos' }
+        ... < 4 / (1 + ↑N) : by {rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN', norm_cast, exact add_lt_add_left hn 1 }
         ... < ε : by {rw div_lt_iff'' hN' hε, exact lt_trans hN (lt_one_add ↑N) }
   },
   { simp,
-    refine one_lt_div_of_lt (5 + ↑n) hn' _,
-    norm_num,
+    exact one_lt_div_of_lt (5 + ↑n) hn' (by norm_num),
   }
 end
 
@@ -94,68 +90,47 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
   cases exists_nat_gt (max 4 (8 / ε)) with N hN,
   existsi N,
   intros n hn,
-  have hn_gt_4 : (n : ℝ) > 4 :=
-    calc
-      (n : ℝ) ≥ N : by { norm_cast, exact hn }
-        ... > max 4 (8 / ε) : hN
-        ... ≥ 4 : le_max_left 4 (8 / ε),
-  have hn_gt_2 : (n : ℝ) > 2 :=
-    calc
-      (n : ℝ) > 4 : hn_gt_4
-        ... > 2 : by norm_num,
-  have hn_pos : (n : ℝ) > 0 :=
-    calc
-      (n : ℝ) > 2 : hn_gt_2
-        ... > 0 : by norm_num,
+  have hn_gt_4 : (n : ℝ) > 4 := calc
+    (n : ℝ) ≥ N : by { norm_cast, exact hn }
+      ... > max 4 (8 / ε) : hN
+      ... ≥ 4 : le_max_left 4 (8 / ε),
+  have hn_gt_2 : (n : ℝ) > 2 := lt_trans (by norm_num) hn_gt_4,
+  have hn_pos : (n : ℝ) > 0 := lt_trans (by norm_num) hn_gt_4,
   change abs ((↑n + 2) / (↑n - 2) - 1) < ε,
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
-        have hn' : ((n : ℝ) - 2) ≠ 0 := begin
-          change ¬ ((n : ℝ) - 2 = 0),
-          rw sub_eq_zero,
-          exact ne_of_gt hn_gt_2,
-        end,
+        have hn' : (n : ℝ) - 2 ≠ 0 := sub_ne_zero.mpr (ne_of_gt hn_gt_2),
         apply congr_arg,
         conv_lhs { congr, skip, rw ←div_self hn' },
         field_simp [hn],
-        ring,
+        norm_num,
       }
-      ... = 4 / ((n : ℝ) - 2) : by { rw abs_of_pos, refine div_pos _ _, norm_num, rw sub_pos, exact hn_gt_2 }
-      ... < 4 / ((n : ℝ) / 2) : by {
-        rw div_lt_div_left,
-        { rw [div_lt_iff, sub_mul, mul_two], norm_num, exact hn_gt_4, exact zero_lt_two },
-        { norm_num },
-        { rw sub_pos, exact hn_gt_2 },
-        { refine div_pos hn_pos _, norm_num }
-      }
-      ... = 8 / (n : ℝ) : by { rw div_div_eq_mul_div, ring, }
+      ... = 4 / ((n : ℝ) - 2) : by { refine abs_of_pos (div_pos (by norm_num) _), rw sub_pos, exact hn_gt_2 }
+      ... < 4 / ((n : ℝ) / 2) : by { rw div_lt_div_left, all_goals { linarith [hn_gt_4] } }
+      ... = 8 / (n : ℝ) : by { rw div_div_eq_mul_div, ring }
       ... < ε : by {
-        rw div_lt_iff'' _ hε,
-        { calc
-            8 / ε ≤ max 4 (8 / ε) : le_max_right 4 (8 / ε)
-              ... < N : hN
-              ... ≤ n : by { norm_cast, exact hn },
-        },
-        { exact hn_pos }},
+        rw div_lt_iff'' hn_pos hε,
+        calc
+          8 / ε ≤ max 4 (8 / ε) : le_max_right 4 (8 / ε)
+            ... < N : hN
+            ... ≤ n : nat.cast_le.mpr hn,
+      },
 end
 
 -- Example 3.8
 example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
+  unfold seq_diverges,
   by_contradiction h₂,
-  unfold seq_diverges at h₂,
-  rw not_not at h₂,
   cases h₂ with l hl,
   cases hl δ h₁ with N hN,
   have h₂ : N ≤ 2 * N := by { rw two_mul, exact nat.le_add_right N N },
   have h₃ : N ≤ 2 * N + 1 := nat.le_succ_of_le h₂,
   have h₄ : abs (δ - l) < δ := begin
-    have H := hN (2 * N) h₂,
-    change abs ((-1) ^ (2 * N) * δ - l) < δ at H,
+    have H : abs ((-1) ^ (2 * N) * δ - l) < δ := hN (2 * N) h₂,
     rwa [neg_one_pow_eq_pow_mod_two, nat.mul_mod_right, pow_zero, one_mul] at H,
   end,
   have h₅ : abs (δ + l) < δ := begin
-    have H := hN (2 * N + 1) h₃,
-    change abs ((-1) ^ (2 * N + 1) * δ - l) < δ at H,
+    have H : abs ((-1) ^ (2 * N + 1) * δ - l) < δ := hN (2 * N + 1) h₃,
     rw [neg_one_pow_eq_pow_mod_two, add_comm, nat.add_mul_mod_self_left] at H,
     change 1 % 2 with 1 at H,
     rw [pow_one, neg_one_mul, ←abs_neg] at H,
@@ -256,9 +231,8 @@ theorem limit_seq_add {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   unfold seq_add,
-  have hsimp : a n + b n - (la + lb) = (a n - la) + (b n - lb) := by ring,
   calc
-    abs (a n + b n - (la + lb)) = abs ((a n - la) + (b n - lb)) : by rw hsimp
+    abs (a n + b n - (la + lb)) = abs ((a n - la) + (b n - lb)) : by ring
       ... ≤ abs (a n - la) + abs (b n - lb) : abs_add (a n - la) (b n - lb)
       ... < ε / 2 + ε / 2 : add_lt_add hNa hNb
       ... = ε : add_halves ε,
@@ -279,7 +253,6 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   replace hA₂ := hA₂ n,
   unfold seq_mul,
-  have hsimp : a n * b n - la * lb = (a n - la) * lb + a n * (b n - lb) := by ring,
   have h₁ : abs (a n - la) * abs lb < ε / 2 :=
     calc
       abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
@@ -297,7 +270,7 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
       abs (a n) * abs (b n - lb) ≤ A * (ε / (2 * A)) : mul_le_mul hA₂ (le_of_lt hNb) (abs_nonneg (b n - lb)) (le_of_lt hA₁)
         ... = ε / 2 : by { field_simp [ne_of_gt hA₁], ring, },
   calc
-    abs (a n * b n - la * lb) = abs ((a n - la) * lb + a n * (b n - lb)) : by rw hsimp
+    abs (a n * b n - la * lb) = abs ((a n - la) * lb + a n * (b n - lb)) : by ring
       ... ≤ abs ((a n - la) * lb) + abs(a n * (b n - lb)) : abs_add ((a n - la) * lb) (a n * (b n - lb))
       ... = abs (a n - la) * abs lb + abs (a n) * abs (b n - lb) : by rw [abs_mul, abs_mul]
       ... < ε / 2 + ε / 2 : add_lt_add_of_lt_of_le h₁ h₂
