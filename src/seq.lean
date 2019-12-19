@@ -46,20 +46,19 @@ example : is_limit (λ n, 1 / (n + 1)) 0 := begin
   cases exists_nat_one_div_lt hε with N hN,
   existsi N,
   intros n hn,
-  simp,
+  rw sub_zero,
+  dsimp,
   rw abs_of_pos,
-  { simp at hN,
-    have hn' : 0 < 1 + (n : ℝ) := by { norm_cast, exact nat.zero_lt_one_add n },
-    have hN' : 0 < 1 + (N : ℝ) := by { norm_cast, exact nat.zero_lt_one_add N },
-    calc
-      (1 + ↑n)⁻¹ ≤ (1 + ↑N)⁻¹ : by { rw inv_le_inv hn' hN', simp, exact hn }
-        ... < ε : hN
+  { refine lt_of_le_of_lt _ hN,
+    rw one_div_le_one_div _ _,
+    { norm_cast,
+      simp,
+      exact hn,
+    },
+    exact nat.cast_add_one_pos n,
+    exact nat.cast_add_one_pos N,
   },
-  { rw gt_iff_lt,
-    apply inv_pos,
-    norm_cast,
-    exact nat.zero_lt_one_add n
-  }
+  { exact nat.one_div_pos_of_nat }
 end
 
 -- Example 3.5
@@ -69,18 +68,19 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   cases exists_nat_gt (4 / ε) with N hN,
   existsi N + 1,
   intros n hn,
-  simp,
-  have hN' : 0 < 1 + (↑N : ℝ) := by { norm_cast, exact nat.zero_lt_one_add N },
-  have hn' : 0 < 1 + (↑n : ℝ) := by { norm_cast, exact nat.zero_lt_one_add n },
+  change abs ((↑n + 5) / (↑n + 1) - 1) < ε,
+  have hN' : 0 < (↑N : ℝ) + 1 := nat.cast_add_one_pos N,
+  have hn' : 0 < (↑n : ℝ) + 1 := nat.cast_add_one_pos n,
   rw abs_of_pos,
-  { have hn'' : 1 + (↑n : ℝ) ≠ 0 := ne_of_gt hn',
-    calc
-      -(1 : ℝ) + (5 + ↑n) / (1 + ↑n) = 4 / (1 + ↑n) : by { symmetry, rw [div_eq_iff hn'', add_mul, div_mul_cancel _ hn''], ring }
-        ... < 4 / (1 + ↑N) : by {rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN', norm_cast, exact add_lt_add_left hn 1 }
-        ... < ε : by {rw div_lt_iff'' hN' hε, exact lt_trans hN (lt_one_add ↑N) }
+  { calc
+      (↑n + 5) / (↑n + 1) - 1 = (↑n + 5) / (↑n + 1) - (↑n + 1) / (↑n + 1) : by { simp, refine (div_self _).symm, rw add_comm, exact ne_of_gt hn' }
+        ... = 4 / ((↑n : ℝ) + 1) : by ring
+        ... < 4 / ((↑N : ℝ) + 1) : by { rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN', norm_cast, exact add_lt_add_right hn 1 }
+        ... < ε : by { rw div_lt_iff'' hN' hε, exact lt_trans hN (lt_add_one ↑N) },
   },
-  { simp,
-    exact one_lt_div_of_lt (5 + ↑n) hn' (by norm_num),
+  { rw [gt_iff_lt, sub_pos],
+    refine one_lt_div_of_lt (↑n + 5) hn' _,
+    norm_num,
   }
 end
 
@@ -253,20 +253,16 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   replace hA₂ := hA₂ n,
   unfold seq_mul,
-  have h₁ : abs (a n - la) * abs lb < ε / 2 :=
-    calc
+  have h₁ : abs (a n - la) * abs lb < ε / 2 := calc
       abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
+        ... = ε * abs lb / (2 * (abs lb + 1)) : by field_simp
         ... < ε / 2 : by {
-          field_simp,
-          rw div_lt_iff' H,
-          rw ←mul_lt_mul_right zero_lt_two,
-          rw ←sub_pos,
+          rw [div_lt_iff' H, ←mul_lt_mul_right zero_lt_two, ←sub_pos],
           field_simp,
           ring,
           exact mul_pos' zero_lt_two hε,
         },
-  have h₂ : abs (a n) * abs (b n - lb) ≤  ε / 2 :=
-    calc
+  have h₂ : abs (a n) * abs (b n - lb) ≤  ε / 2 := calc
       abs (a n) * abs (b n - lb) ≤ A * (ε / (2 * A)) : mul_le_mul hA₂ (le_of_lt hNb) (abs_nonneg (b n - lb)) (le_of_lt hA₁)
         ... = ε / 2 : by { field_simp [ne_of_gt hA₁], ring, },
   calc
