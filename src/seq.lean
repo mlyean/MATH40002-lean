@@ -26,7 +26,7 @@ def seq_diverges (a : ℕ → ℝ) := ¬ seq_converges a
 def seq_diverges_to_pos_inf (a : ℕ → ℝ) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
 def seq_diverges_to_neg_inf (a : ℕ → ℝ) := seq_diverges_to_pos_inf (λ n, -a n)
 
-def seq_diverges_iff (a : ℕ → ℝ) : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
+lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
   unfold seq_diverges,
   unfold seq_converges,
   unfold is_limit,
@@ -237,7 +237,7 @@ end
 -- Some operations on sequences
 def seq_add (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
 def seq_mul (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
-noncomputable def seq_div (a : ℕ → ℝ) (b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
+noncomputable def seq_div (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
 
 -- Theorem 3.11 (Algebra of limits)
 theorem limit_seq_add {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (seq_add a b) (la + lb) := begin
