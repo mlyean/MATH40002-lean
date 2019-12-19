@@ -26,6 +26,12 @@ def seq_diverges (a : ℕ → ℝ) := ¬ seq_converges a
 def seq_diverges_to_pos_inf (a : ℕ → ℝ) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
 def seq_diverges_to_neg_inf (a : ℕ → ℝ) := seq_diverges_to_pos_inf (λ n, -a n)
 
+lemma seq_converges_of_has_limit {a : ℕ → ℝ} {l : ℝ} : is_limit a l → seq_converges a := begin
+  intro H,
+  existsi l,
+  exact H,
+end
+
 lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
   unfold seq_diverges,
   unfold seq_converges,
@@ -101,23 +107,23 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
     calc
       (n : ℝ) > 2 : hn_gt_2
         ... > 0 : by norm_num,
-  have hsimp : (↑n + 2) / (↑n - 2) - (1 : ℝ) = 4 / (↑n - 2) := begin 
-    have hn' : ((n : ℝ) - 2) ≠ 0 := begin
-      change ¬ ((n : ℝ) - 2 = 0),
-      rw sub_eq_zero,
-      exact ne_of_gt hn_gt_2,
-    end,
-    conv_lhs { congr, skip, rw ←div_self hn' },
-    field_simp [hn],
-    ring,
-  end,
   change abs ((↑n + 2) / (↑n - 2) - 1) < ε,
   calc
-    abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by rw hsimp
+    abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
+        have hn' : ((n : ℝ) - 2) ≠ 0 := begin
+          change ¬ ((n : ℝ) - 2 = 0),
+          rw sub_eq_zero,
+          exact ne_of_gt hn_gt_2,
+        end,
+        apply congr_arg,
+        conv_lhs { congr, skip, rw ←div_self hn' },
+        field_simp [hn],
+        ring,
+      }
       ... = 4 / ((n : ℝ) - 2) : by { rw abs_of_pos, refine div_pos _ _, norm_num, rw sub_pos, exact hn_gt_2 }
       ... < 4 / ((n : ℝ) / 2) : by {
         rw div_lt_div_left,
-        { linarith only [hn_gt_4] },
+        { rw [div_lt_iff, sub_mul, mul_two], norm_num, exact hn_gt_4, exact zero_lt_two },
         { norm_num },
         { rw sub_pos, exact hn_gt_2 },
         { refine div_pos hn_pos _, norm_num }
@@ -189,7 +195,7 @@ theorem limit_unique {a : ℕ → ℝ} {l₁ l₂ : ℝ} (h₁ : is_limit a l₁
 end
 
 -- Proposition 3.10
-lemma bdd_of_converges (a : ℕ → ℝ) : seq_converges a → seq_bdd a := begin
+lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begin
   intro ha,
   cases ha with l hl,
   cases hl 1 zero_lt_one with N hN,
@@ -260,7 +266,42 @@ end
 
 theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (seq_mul a b) (la * lb) := begin
   intros ε hε,
-  sorry
+  rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
+  have H : 2 * (abs lb + 1) > 0 := mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
+  cases hla (ε / (2 * (abs lb + 1))) _ with Na hNa,
+  cases hlb (ε / (2 * A)) _ with Nb hNb,
+  show ε / (2 * (abs lb + 1)) > 0, from div_pos hε H,
+  show ε / (2 * A) > 0, from div_pos hε (mul_pos' zero_lt_two hA₁),
+  let N := max Na Nb,
+  existsi N,
+  intros n Hn,
+  replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
+  replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
+  replace hA₂ := hA₂ n,
+  unfold seq_mul,
+  have hsimp : a n * b n - la * lb = (a n - la) * lb + a n * (b n - lb) := by ring,
+  have h₁ : abs (a n - la) * abs lb < ε / 2 :=
+    calc
+      abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
+        ... < ε / 2 : by {
+          field_simp,
+          rw div_lt_iff' H,
+          rw ←mul_lt_mul_right zero_lt_two,
+          rw ←sub_pos,
+          field_simp,
+          ring,
+          exact mul_pos' zero_lt_two hε,
+        },
+  have h₂ : abs (a n) * abs (b n - lb) ≤  ε / 2 :=
+    calc
+      abs (a n) * abs (b n - lb) ≤ A * (ε / (2 * A)) : mul_le_mul hA₂ (le_of_lt hNb) (abs_nonneg (b n - lb)) (le_of_lt hA₁)
+        ... = ε / 2 : by { field_simp [ne_of_gt hA₁], ring, },
+  calc
+    abs (a n * b n - la * lb) = abs ((a n - la) * lb + a n * (b n - lb)) : by rw hsimp
+      ... ≤ abs ((a n - la) * lb) + abs(a n * (b n - lb)) : abs_add ((a n - la) * lb) (a n * (b n - lb))
+      ... = abs (a n - la) * abs lb + abs (a n) * abs (b n - lb) : by rw [abs_mul, abs_mul]
+      ... < ε / 2 + ε / 2 : add_lt_add_of_lt_of_le h₁ h₂
+      ... = ε : add_halves ε,
 end
 
 theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) (hlb' : lb ≠ 0) : is_limit (seq_div a b) (la / lb) := begin
