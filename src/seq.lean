@@ -74,10 +74,8 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   rw abs_of_pos,
   { calc
       (↑n + 5) / (↑n + 1) - 1 = (↑n + 5) / (↑n + 1) - (↑n + 1) / (↑n + 1) : by {
-          simp,
-          refine (div_self _).symm,
-          rw add_comm,
-          exact ne_of_gt hn'
+          have h : 1 + (n : ℝ) ≠ 0 := by { norm_cast, norm_num },
+          field_simp [h],
         }
         ... = 4 / ((↑n : ℝ) + 1) : by ring
         ... < 4 / ((↑N : ℝ) + 1) : by {
@@ -112,10 +110,10 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
         have hn' : (n : ℝ) - 2 ≠ 0 := sub_ne_zero.mpr (ne_of_gt hn_gt_2),
-        apply congr_arg,
+        refine congr_arg abs _,
         conv_lhs { congr, skip, rw ←div_self hn' },
         field_simp [hn],
-        norm_num,
+        ring,
       }
       ... = 4 / ((n : ℝ) - 2) : by {
         refine abs_of_pos (div_pos (by norm_num) _),
@@ -203,8 +201,7 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
   let M := max B (abs l + 1),
   have hM : M > 0 :=
     calc
-      M = max B (abs l + 1) : rfl
-        ... ≥ abs l + 1 : le_max_right B (abs l + 1)
+      M ≥ abs l + 1 : le_max_right B (abs l + 1)
         ... ≥ 0 + 1 : add_le_add_right (abs_nonneg l) 1
         ... = 1 : zero_add 1
         ... > 0 : zero_lt_one,
@@ -212,25 +209,15 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
   existsi hM,
   intro n,
   cases le_or_gt n N with h h,
-  { have an_mem_head : abs (a n) ∈ head := begin
-      rw finset.mem_image,
-      existsi n,
-      simp,
-      exact nat.lt_succ_of_le h,
-    end,
-    calc
-      abs (a n) ≤ B : finset.le_max_of_mem an_mem_head hB
-        ... ≤ M : le_max_left B (abs l + 1),
+  { refine le_trans (finset.le_max_of_mem _ hB) (le_max_left B (abs l + 1)),
+    rw finset.mem_image,
+    existsi n,
+    simp,
+    exact nat.lt_succ_of_le h,
   },
-  { have h' : abs (a n) - abs l < 1 :=
-    calc
-      abs (a n) - abs l ≤ abs (a n - l) : abs_sub_abs_le_abs_sub (a n) l
-        ... < 1 : hN n (le_of_lt h),
+  { have h' : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n (le_of_lt h)),
     rw sub_lt_iff_lt_add' at h',
-    apply le_of_lt,
-    calc
-      abs (a n) < abs l + 1 : h'
-        ... ≤ M : le_max_right B (abs l + 1),
+    exact le_trans (le_of_lt h') (le_max_right B (abs l + 1)),
   }
 end
 
@@ -283,7 +270,7 @@ theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
           ring,
           exact mul_pos' zero_lt_two hε,
         },
-  have h₂ : abs (a n) * abs (b n - lb) ≤  ε / 2 := calc
+  have h₂ : abs (a n) * abs (b n - lb) ≤ ε / 2 := calc
       abs (a n) * abs (b n - lb) ≤ A * (ε / (2 * A)) : mul_le_mul hA₂ (le_of_lt hNb) (abs_nonneg (b n - lb)) (le_of_lt hA₁)
         ... = ε / 2 : by { field_simp [ne_of_gt hA₁], ring, },
   calc
