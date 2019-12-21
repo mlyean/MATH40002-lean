@@ -12,9 +12,11 @@ lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c
 
 -- Chapter 3 : Sequences
 
+-- Section 3.1 : Convergence of Sequences
+
 -- Definition of bounded for sequences
-def seq_bdd_above (a : ℕ → ℝ) := ∃ (M : ℝ), ∀ n, a n ≤ M
-def seq_bdd_below (a : ℕ → ℝ) := ∃ (M : ℝ), ∀ n, M ≤ a n
+def seq_bdd_above (a : ℕ → ℝ) := bdd_above (a '' set.univ)
+def seq_bdd_below (a : ℕ → ℝ) := bdd_below (a '' set.univ)
 def seq_bdd (a : ℕ → ℝ) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
 -- Definition of limit
@@ -432,17 +434,44 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
           lim_of_neg_pow)),
 end
 
--- Definition of increasing and decreasing sequences
-def seq_increasing (a : ℕ → ℝ) := ∀ n, a n ≤ a (n + 1)
-def seq_decreasing (a : ℕ → ℝ) := ∀ n, a n ≥ a (n + 1)
-
 -- Theorem 3.13 (Monotone convergence theorem)
-theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : seq_increasing a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (a '' set.univ)) := begin
-  sorry,
+theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (a '' set.univ)) := begin
+  set l := real.Sup (a '' set.univ),
+  intros ε hε,
+  have h : is_lub (a '' set.univ) l := by {
+    unfold seq_bdd_above at ha',
+    cases ha' with b hb,
+    refine real.is_lub_Sup _ _,
+    show a 0 ∈ a '' set.univ, by {
+      rw set.mem_image_eq,
+      existsi 0,
+      simp,
+    },
+    show b ∈ upper_bounds (a '' set.univ), from hb,
+  },
+  have h' : l - ε < l := by linarith only [hε],
+  rw lt_is_lub_iff h at h',
+  rcases h' with ⟨x, ⟨⟨N, ⟨h'', hx⟩⟩, haN⟩⟩,
+  rw ←hx at haN,
+  clear h'' h hx x,
+  existsi N,
+  intros n hn,
+  rw abs_lt,
+  split,
+  { rw lt_sub_iff_add_lt',
+    exact lt_of_lt_of_le haN (ha hn),
+  },
+  { refine lt_of_le_of_lt _ hε,
+    rw sub_nonpos,
+    refine real.le_Sup _ ha' _,
+    rw set.mem_image_eq,
+    existsi n,
+    simp,
+  }
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_lim {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : a ≤ b := begin
+theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : a ≤ b := begin
   sorry,
 end
 
