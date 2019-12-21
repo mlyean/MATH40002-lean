@@ -293,15 +293,15 @@ theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
       ... = ε : add_halves ε,
 end
 
-theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) (hlb' : lb ≠ 0) : is_limit (div_seq a b) (la / lb) := begin
+theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (div_seq a b) (la / lb) := begin
   have hla' : 4 * abs la + 1 > 0 := by linarith only [abs_nonneg la],
-  have hlb'' : abs lb > 0 := abs_pos_of_ne_zero hlb',
+  have hlb' : abs lb > 0 := abs_pos_of_ne_zero hlb_ne_zero,
   intros ε hε,
-  cases hlb (abs lb / 2) (div_pos hlb'' zero_lt_two) with N₁ hN₁,
+  cases hlb (abs lb / 2) (div_pos hlb' zero_lt_two) with N₁ hN₁,
   cases hla (ε * abs lb / 4) _ with N₂ hN₂,
   cases hlb (ε * (abs lb) ^ 2 / (4 * abs la + 1)) _ with N₃ hN₃,
-  show ε * abs lb / 4 > 0, from div_pos (mul_pos hε hlb'') (by norm_num),
-  show ε * abs lb ^ 2 / (4 * abs la + 1) > 0, from div_pos (mul_pos hε (pow_pos hlb'' 2)) hla',
+  show ε * abs lb / 4 > 0, from div_pos (mul_pos hε hlb') (by norm_num),
+  show ε * abs lb ^ 2 / (4 * abs la + 1) > 0, from div_pos (mul_pos hε (pow_pos hlb' 2)) hla',
   let N := max N₁ (max N₂ N₃),
   existsi N,
   intros n Hn,
@@ -319,13 +319,13 @@ theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
   replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) Hn),
   replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) Hn),
   unfold div_seq,
-  have hbn : b n ≠ 0 := abs_pos_iff.mp (lt_trans (half_pos hlb'') hN₁),
+  have hbn : b n ≠ 0 := abs_pos_iff.mp (lt_trans (half_pos hlb') hN₁),
   have h_main : abs ((a n - la) * lb + la * (lb - b n)) < ε * abs lb * abs lb / 2 := calc
     abs ((a n - la) * lb + la * (lb - b n)) ≤ abs ((a n - la) * lb) + abs (la * (lb - b n)) : abs_add _ _
       ... = abs (a n - la) * abs lb + abs la * abs (b n - lb) : by rw [abs_mul, abs_mul, abs_sub lb (b n)]
       ... < (ε * abs lb / 4) * abs lb + abs la * ε * abs lb ^ 2 / (4 * abs la + 1) : by {
         refine add_lt_add_of_lt_of_le _ _,
-        { exact mul_lt_mul_of_pos_right hN₂ hlb'' },
+        { exact mul_lt_mul_of_pos_right hN₂ hlb' },
         { have hsimp : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
           rw hsimp,
           exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
@@ -333,29 +333,29 @@ theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
       }
       ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by { rw pow_two, ring }
       ... < (ε * abs lb * abs lb) * (1 / 2) : by {
-        refine mul_lt_mul_of_pos_left _ (mul_pos (mul_pos hε hlb'') hlb''),
+        refine mul_lt_mul_of_pos_left _ (mul_pos (mul_pos hε hlb') hlb'),
         have hsimp : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
         rw [hsimp, add_lt_add_iff_left, div_lt_iff hla'],
         linarith,
       }
       ... = ε * abs lb * abs lb / 2 : by ring,
   calc
-    abs (a n / b n - la / lb) = abs ((a n * lb - b n * la) / (b n * lb)) : congr_arg abs (div_sub_div (a n) la hbn hlb')
+    abs (a n / b n - la / lb) = abs ((a n * lb - b n * la) / (b n * lb)) : congr_arg abs (div_sub_div (a n) la hbn hlb_ne_zero)
       ... = abs (a n * lb - b n * la) / abs (b n * lb) : by rw abs_div
       ... = abs (a n * lb - b n * la) / (abs (b n) * abs lb) : by rw abs_mul
       ... = abs (a n * lb - b n * la) / (abs lb * abs (b n)) : by rw mul_comm (abs (b n)) (abs lb)
       ... = (abs (a n * lb - b n * la) / abs lb) * (1 / abs (b n)) : by rw div_mul_eq_div_mul_one_div 
       ... ≤ (abs (a n * lb - b n * la) / abs lb) * (2 / abs lb) : by {
-        refine mul_le_mul_of_nonneg_left _ (div_nonneg (abs_nonneg _) hlb''),
+        refine mul_le_mul_of_nonneg_left _ (div_nonneg (abs_nonneg _) hlb'),
         rw div_le_div_iff,
         { linarith only [hN₁] },
         { exact abs_pos_of_ne_zero hbn },
-        { exact hlb'' }
+        { exact hlb' }
       }
       ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
       ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
-      ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos (by norm_num) (mul_pos hlb'' hlb''))
-      ... = ε : by { field_simp [ne_of_gt hlb''], ring },
+      ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos (by norm_num) (mul_pos hlb' hlb'))
+      ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
 -- Some useful limits (not in notes)
@@ -389,18 +389,10 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
     (λ (n : ℕ), (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1  + -1 * (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
   begin
     funext,
-    let m : ℝ := n + 1,
-    change (m ^ 2 + 5) / (m ^ 3 - m + 6) = (1 / m + 5 * (1 / m ^ 3)) / (1 + (-1) * (1 / m ^ 2) + 6 * (1 / m ^ 3)),
-    have hm : m ≠ 0 := by { change (↑n : ℝ) + 1 ≠ 0, norm_cast, norm_num },
-    have hm' : m ^ 3 ≠ 0 := pow_ne_zero 3 hm,
-    conv_rhs { rw ←mul_div_mul_right' _ _ hm' },
+    have hn : 1 + (n : ℝ) ≠ 0 := by { norm_cast, norm_num },
+    conv_rhs { rw ←mul_div_mul_right' _ _ (pow_ne_zero 3 hn) },
     refine congr (congr_arg has_div.div _) _,
-    all_goals {
-      repeat { rw pow_succ },
-      field_simp [hm],
-      change m with n + 1,
-      ring,
-    },
+    all_goals { field_simp [hn], ring }
   end,
   conv_rhs at hsimp {
     change
@@ -422,27 +414,21 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
   },
   have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 + (-1) * 0 + 6 * 0) := by norm_num,
   conv { congr, { rw hsimp }, { rw hsimp' } },
-  refine lim_div_eq_div_lim _ _ (by norm_num),
-  { refine lim_add_eq_add_lim _ _,
-    { exact limit_of_reciprocal },
-    { refine lim_mul_eq_mul_lim _ _,
-      { exact lim_of_const_seq },
-      { exact lim_of_neg_pow }
-    },
-  },
-  { refine lim_add_eq_add_lim _ _,
-    { refine lim_add_eq_add_lim _ _,
-      { exact lim_of_const_seq },
-      { refine lim_mul_eq_mul_lim _ _,
-        { exact lim_of_const_seq },
-        { exact lim_of_neg_pow }
-      }
-    },
-    { refine lim_mul_eq_mul_lim _ _,
-      { exact lim_of_const_seq },
-      { exact lim_of_neg_pow },
-    }
-  },
+  exact lim_div_eq_div_lim (by norm_num)
+    (lim_add_eq_add_lim
+      limit_of_reciprocal
+      (lim_mul_eq_mul_lim
+        lim_of_const_seq
+        lim_of_neg_pow))
+    (lim_add_eq_add_lim
+      (lim_add_eq_add_lim
+        lim_of_const_seq
+        (lim_mul_eq_mul_lim
+          lim_of_const_seq
+          lim_of_neg_pow))
+      (lim_mul_eq_mul_lim
+        lim_of_const_seq
+        lim_of_neg_pow)),
 end
 
 end MATH40002
