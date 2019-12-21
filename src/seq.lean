@@ -1,4 +1,4 @@
-import data.real.basic
+import seq_def
 
 namespace MATH40002
 
@@ -12,56 +12,6 @@ lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c
 -- Chapter 3 : Sequences
 
 -- Section 3.1 : Convergence of Sequences
-
--- Definition of bounded for sequences
-def seq_bdd_above (a : ℕ → ℝ) := bdd_above (set.range a)
-def seq_bdd_below (a : ℕ → ℝ) := bdd_below (set.range a)
-def seq_bdd (a : ℕ → ℝ) := ∃ M > 0, ∀ n, abs (a n) ≤ M
-
--- Definition of limit
-def is_limit (a : ℕ → ℝ) (l : ℝ) := ∀ ε > 0, ∃ (N : ℕ), ∀ n ≥ N, abs ((a n) - l) < ε
-
--- Definitions of convergence and divergence
-def seq_converges (a : ℕ → ℝ) := ∃ (l : ℝ), is_limit a l
-def seq_diverges (a : ℕ → ℝ) := ¬ seq_converges a
-def seq_diverges_to_pos_inf (a : ℕ → ℝ) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
-def seq_diverges_to_neg_inf (a : ℕ → ℝ) := seq_diverges_to_pos_inf (λ n, -a n)
-
-lemma seq_converges_of_has_limit {a : ℕ → ℝ} {l : ℝ} : is_limit a l → seq_converges a := begin
-  intro H,
-  existsi l,
-  exact H,
-end
-
-lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
-  unfold seq_diverges seq_converges is_limit,
-  push_neg,
-  simp,
-end
-
--- Basic operations on sequences
-def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
-def zero_seq : ℕ → ℝ := const_seq 0
-def one_seq : ℕ → ℝ := const_seq 1
-def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
-def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
-noncomputable def inv_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, (a n)⁻¹
-def neg_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, -a n
-def sub_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n - b n
-noncomputable def div_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
-
-instance : has_zero (ℕ → ℝ) := ⟨zero_seq⟩
-instance : has_one (ℕ → ℝ) := ⟨one_seq⟩
-instance : has_add (ℕ → ℝ) := ⟨add_seq⟩
-instance : has_mul (ℕ → ℝ) := ⟨mul_seq⟩
-noncomputable instance : has_inv (ℕ → ℝ) := ⟨inv_seq⟩
-instance : has_neg (ℕ → ℝ) := ⟨neg_seq⟩
-instance : has_sub (ℕ → ℝ) := ⟨sub_seq⟩
-noncomputable instance : has_div (ℕ → ℝ) := ⟨div_seq⟩
-
--- Definition of increasing and decreasing sequences
-def seq_increasing (a : ℕ → ℝ) := monotone a
-def seq_decreasing (a : ℕ → ℝ) := monotone (λ n, -a n)
 
 -- Example 3.4
 lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
