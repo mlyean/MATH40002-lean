@@ -239,6 +239,7 @@ end
 -- Some operations on sequences
 def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
 def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
+def sub_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n - b n
 def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
 noncomputable def div_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
 
@@ -370,6 +371,25 @@ lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
   exact hε,
 end
 
+theorem lim_sub_eq_sub_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (sub_seq a b) (la - lb) := begin
+  have hsimp : sub_seq a b = add_seq a (mul_seq (const_seq (-1)) b) := begin
+    funext,
+    unfold sub_seq,
+    unfold add_seq,
+    unfold mul_seq,
+    unfold const_seq,
+    ring,
+  end,
+  have hsimp' : la - lb = la + (-1) * lb := by ring,
+  rw [hsimp, hsimp'],
+  exact
+    lim_add_eq_add_lim
+      hla
+      (lim_mul_eq_mul_lim
+        lim_of_const_seq
+        hlb),
+end
+
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
   { conv { congr, funext, rw [zero_add, pow_one] },
@@ -471,8 +491,20 @@ theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' :
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : a ≤ b := begin
-  sorry,
+theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
+  have hlab := lim_sub_eq_sub_lim hla hlb,
+  clear hla hlb,
+  rw ←sub_nonpos,
+  by_contradiction h',
+  rw not_le at h',
+  cases hlab (la - lb) h' with N hN,
+  replace hN := hN N (le_refl N),
+  rw abs_lt at hN,
+  replace hN := hN.1,
+  simp at hN,
+  unfold sub_seq at hN,
+  rw sub_pos at hN,
+  exact lt_irrefl _ (lt_of_lt_of_le hN (h N)),
 end
 
 end MATH40002
