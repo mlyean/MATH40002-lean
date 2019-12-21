@@ -278,17 +278,6 @@ theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   have hlb'' : abs lb > 0 := abs_pos_of_ne_zero hlb',
   intros ε hε,
   cases hlb (abs lb / 2) (div_pos hlb'' zero_lt_two) with N₁ hN₁,
-  have hN₁' : ∀ n ≥ N₁, abs (b n) > abs lb / 2 := begin
-    intros n Hn,
-    have h : abs lb - abs (b n) < abs lb / 2 := calc
-      abs lb - abs (b n) ≤ abs (lb - b n) : abs_sub_abs_le_abs_sub lb (b n)
-        ... = abs (b n - lb) : by rw abs_sub
-        ... < abs lb / 2 : hN₁ n Hn,
-    rw sub_lt_iff_lt_add at h,
-    linarith only [h],
-  end,
-  clear hN₁,
-  rename hN₁' hN₁,
   cases hla (ε * abs lb / 4) _ with N₂ hN₂,
   cases hlb (ε * (abs lb) ^ 2 / (4 * abs la + 1)) _ with N₃ hN₃,
   show ε * abs lb / 4 > 0, from div_pos (mul_pos hε hlb'') (by norm_num),
@@ -297,6 +286,16 @@ theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   existsi N,
   intros n Hn,
   replace hN₁ := hN₁ n (le_trans (le_max_left _ _) Hn),
+  have hN₁' : abs (b n) > abs lb / 2 := begin
+    have h : abs lb - abs (b n) < abs lb / 2 := calc
+      abs lb - abs (b n) ≤ abs (lb - b n) : abs_sub_abs_le_abs_sub lb (b n)
+        ... = abs (b n - lb) : by rw abs_sub
+        ... < abs lb / 2 : hN₁,
+    rw sub_lt_iff_lt_add at h,
+    linarith only [h],
+  end,
+  clear hN₁,
+  rename hN₁' hN₁,
   replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) Hn),
   replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) Hn),
   unfold seq_div,
