@@ -39,6 +39,30 @@ lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃
   simp,
 end
 
+-- Basic operations on sequences
+def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
+def zero_seq : ℕ → ℝ := const_seq 0
+def one_seq : ℕ → ℝ := const_seq 1
+def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
+def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
+noncomputable def inv_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, (a n)⁻¹
+def neg_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, -a n
+def sub_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n - b n
+noncomputable def div_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
+
+instance : has_zero (ℕ → ℝ) := ⟨zero_seq⟩
+instance : has_one (ℕ → ℝ) := ⟨one_seq⟩
+instance : has_add (ℕ → ℝ) := ⟨add_seq⟩
+instance : has_mul (ℕ → ℝ) := ⟨mul_seq⟩
+noncomputable instance : has_inv (ℕ → ℝ) := ⟨inv_seq⟩
+instance : has_neg (ℕ → ℝ) := ⟨neg_seq⟩
+instance : has_sub (ℕ → ℝ) := ⟨sub_seq⟩
+noncomputable instance : has_div (ℕ → ℝ) := ⟨div_seq⟩
+
+-- Definition of increasing and decreasing sequences
+def seq_increasing (a : ℕ → ℝ) := monotone a
+def seq_decreasing (a : ℕ → ℝ) := monotone (λ n, -a n)
+
 -- Example 3.4
 lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   intros ε hε,
@@ -220,16 +244,8 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
   }
 end
 
--- Basic operations on sequences
-def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
-def neg_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, -a n
-def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
-def sub_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n - b n
-def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
-noncomputable def div_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
-
 -- Theorem 3.11 (Algebra of limits)
-theorem lim_add_eq_add_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (add_seq a b) (la + lb) := begin
+theorem lim_add_eq_add_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a + b) (la + lb) := begin
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
   cases hlb (ε / 2) (half_pos hε) with Nb hNb,
@@ -238,7 +254,6 @@ theorem lim_add_eq_add_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
   intros n Hn,
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
-  unfold add_seq,
   calc
     abs (a n + b n - (la + lb)) = abs ((a n - la) + (b n - lb)) : congr_arg abs (by ring)
       ... ≤ abs (a n - la) + abs (b n - lb) : abs_add (a n - la) (b n - lb)
@@ -246,7 +261,7 @@ theorem lim_add_eq_add_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
       ... = ε : add_halves ε,
 end
 
-theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (mul_seq a b) (la * lb) := begin
+theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a * b) (la * lb) := begin
   intros ε hε,
   rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
   have H : 2 * (abs lb + 1) > 0 := mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
@@ -260,7 +275,6 @@ theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   replace hA₂ := hA₂ n,
-  unfold mul_seq,
   have h₁ : abs (a n - la) * abs lb < ε / 2 := calc
       abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
         ... = ε * abs lb / (2 * (abs lb + 1)) : by field_simp
@@ -281,7 +295,7 @@ theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
       ... = ε : add_halves ε,
 end
 
-theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (div_seq a b) (la / lb) := begin
+theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a / b) (la / lb) := begin
   have hla' : 4 * abs la + 1 > 0 := by linarith only [abs_nonneg la],
   have hlb' : abs lb > 0 := abs_pos_of_ne_zero hlb_ne_zero,
   intros ε hε,
@@ -306,7 +320,6 @@ theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hlb_ne_zero : lb �
   rename hN₁' hN₁,
   replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) Hn),
   replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) Hn),
-  unfold div_seq,
   have hbn : b n ≠ 0 := abs_pos_iff.mp (lt_trans (half_pos hlb') hN₁),
   have h_main : abs ((a n - la) * lb + la * (lb - b n)) < ε * abs lb * abs lb / 2 := calc
     abs ((a n - la) * lb + la * (lb - b n)) ≤ abs ((a n - la) * lb) + abs (la * (lb - b n)) : abs_add _ _
@@ -352,21 +365,19 @@ lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
   existsi 0,
   intros n Hn,
   unfold const_seq,
-  rw [sub_self, abs_zero],
-  exact hε,
+  rwa [sub_self, abs_zero],
 end
 
-theorem lim_neg_eq_neg_lim {a : ℕ → ℝ} {la : ℝ} (hla : is_limit a la) : is_limit (neg_seq a) (-la) := begin
-  unfold neg_seq,
+theorem lim_neg_eq_neg_lim {a : ℕ → ℝ} {la : ℝ} (hla : is_limit a la) : is_limit (-a) (-la) := begin
   conv {
     congr,
-    { funext, rw neg_eq_neg_one_mul },
+    { change (λ n, -a n), funext, rw neg_eq_neg_one_mul },
     { rw neg_eq_neg_one_mul }
   },
   exact lim_mul_eq_mul_lim lim_of_const_seq hla,
 end
 
-theorem lim_sub_eq_sub_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (sub_seq a b) (la - lb) := begin
+theorem lim_sub_eq_sub_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a - b) (la - lb) := begin
   exact lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb),
 end
 
@@ -419,10 +430,6 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
           lim_of_neg_pow)),
 end
 
--- Definition of increasing and decreasing sequences
-def seq_increasing (a : ℕ → ℝ) := monotone a
-def seq_decreasing (a : ℕ → ℝ) := monotone (λ n, -a n)
-
 -- Theorem 3.13 (Monotone convergence theorem)
 theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : seq_increasing a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (set.range a)) := begin
   set l := real.Sup (set.range a),
@@ -450,7 +457,7 @@ theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : seq_increasing a) 
 end
 
 theorem lim_of_bounded_decreaing_seq {a : ℕ → ℝ} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
-  let b := neg_seq a,
+  let b := -a,
   have hb : seq_increasing b := sorry,
   have hb' : seq_bdd_above b := sorry,
   sorry,
@@ -463,7 +470,7 @@ theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {hab : ∀ n, a n ≤
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
   replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
   simp [neg_lt_zero] at hN,
-  unfold sub_seq at hN,
+  change 0 < a N - b N at hN,
   rw sub_pos at hN,
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
 end
