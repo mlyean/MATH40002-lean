@@ -1,5 +1,4 @@
 import data.real.basic
-import algebra.commute
 
 namespace MATH40002
 
@@ -41,7 +40,7 @@ lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃
 end
 
 -- Example 3.4
-lemma limit_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
+lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   intros ε hε,
   cases exists_nat_one_div_lt hε with N hN,
   existsi N,
@@ -221,8 +220,9 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
   }
 end
 
--- Some operations on sequences
+-- Basic operations on sequences
 def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
+def neg_seq (a : ℕ → ℝ) : ℕ → ℝ := λ n, -a n
 def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
 def sub_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n - b n
 def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
@@ -356,34 +356,31 @@ lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
   exact hε,
 end
 
+theorem lim_neg_eq_neg_lim {a : ℕ → ℝ} {la : ℝ} (hla : is_limit a la) : is_limit (neg_seq a) (-la) := begin
+  unfold neg_seq,
+  conv {
+    congr,
+    { funext, rw neg_eq_neg_one_mul },
+    { rw neg_eq_neg_one_mul }
+  },
+  exact lim_mul_eq_mul_lim lim_of_const_seq hla,
+end
+
 theorem lim_sub_eq_sub_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (sub_seq a b) (la - lb) := begin
-  have hsimp : sub_seq a b = add_seq a (mul_seq (const_seq (-1)) b) := begin
-    funext,
-    unfold sub_seq add_seq mul_seq const_seq,
-    ring,
-  end,
-  have hsimp' : la - lb = la + (-1) * lb := by ring,
-  rw [hsimp, hsimp'],
-  exact
-    lim_add_eq_add_lim
-      hla
-      (lim_mul_eq_mul_lim
-        lim_of_const_seq
-        hlb),
+  exact lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb),
 end
 
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
   { conv { congr, funext, rw [zero_add, pow_one] },
-    exact limit_of_reciprocal,
+    exact lim_of_reciprocal,
   },
   { conv {
       congr,
       { funext, rw [pow_succ, ←one_div_mul_one_div] },
       { rw ←mul_zero (0 : ℝ) }
     },
-    change is_limit (mul_seq (λ n, 1 / (↑n + 1)) (λ n, (1 / (↑n + 1) ^ (k + 1)))) (0 * 0),
-    exact lim_mul_eq_mul_lim limit_of_reciprocal hk,
+    exact lim_mul_eq_mul_lim lim_of_reciprocal hk,
   }
 end
 
@@ -402,30 +399,12 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
     refine congr (congr_arg has_div.div _) _,
     all_goals { field_simp [hn], ring }
   end,
-  conv_rhs at hsimp {
-    change
-      div_seq
-        (add_seq
-          (λ n, 1 / (↑n + 1))
-          (mul_seq
-            (const_seq 5)
-            (λ n, 1 / (↑n + 1) ^ 3)))
-        (add_seq
-          (add_seq
-            (const_seq 1)
-            (mul_seq
-              (const_seq (-1))
-              (λ n, 1 / (↑n + 1) ^ 2)))
-          (mul_seq
-            (const_seq 6)
-            (λ n, 1 / (↑n + 1) ^ 3)))
-  },
   have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 + (-1) * 0 + 6 * 0) := by norm_num,
   conv { congr, { rw hsimp }, { rw hsimp' } },
   exact
     lim_div_eq_div_lim (by norm_num)
       (lim_add_eq_add_lim
-        limit_of_reciprocal
+        lim_of_reciprocal
         (lim_mul_eq_mul_lim
           lim_of_const_seq
           lim_of_neg_pow))
@@ -440,8 +419,12 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
           lim_of_neg_pow)),
 end
 
+-- Definition of increasing and decreasing sequences
+def seq_increasing (a : ℕ → ℝ) := monotone a
+def seq_decreasing (a : ℕ → ℝ) := monotone (λ n, -a n)
+
 -- Theorem 3.13 (Monotone convergence theorem)
-theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (set.range a)) := begin
+theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : seq_increasing a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (set.range a)) := begin
   set l := real.Sup (set.range a),
   intros ε hε,
   have h : is_lub (set.range a) l := begin 
@@ -464,6 +447,13 @@ theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' :
     rw sub_nonpos,
     exact real.le_Sup (set.range a) ha' (set.mem_range_self n),
   }
+end
+
+theorem lim_of_bounded_decreaing_seq {a : ℕ → ℝ} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
+  let b := neg_seq a,
+  have hb : seq_increasing b := sorry,
+  have hb' : seq_bdd_above b := sorry,
+  sorry,
 end
 
 -- Example 3.14 (Order limit theorem)
