@@ -414,21 +414,22 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
   },
   have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 + (-1) * 0 + 6 * 0) := by norm_num,
   conv { congr, { rw hsimp }, { rw hsimp' } },
-  exact lim_div_eq_div_lim (by norm_num)
-    (lim_add_eq_add_lim
-      limit_of_reciprocal
-      (lim_mul_eq_mul_lim
-        lim_of_const_seq
-        lim_of_neg_pow))
-    (lim_add_eq_add_lim
+  exact
+    lim_div_eq_div_lim (by norm_num)
       (lim_add_eq_add_lim
-        lim_of_const_seq
+        limit_of_reciprocal
         (lim_mul_eq_mul_lim
           lim_of_const_seq
           lim_of_neg_pow))
-      (lim_mul_eq_mul_lim
-        lim_of_const_seq
-        lim_of_neg_pow)),
+      (lim_add_eq_add_lim
+        (lim_add_eq_add_lim
+          lim_of_const_seq
+          (lim_mul_eq_mul_lim
+            lim_of_const_seq
+            lim_of_neg_pow))
+        (lim_mul_eq_mul_lim
+          lim_of_const_seq
+          lim_of_neg_pow)),
 end
 
 end MATH40002
