@@ -15,8 +15,8 @@ lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c
 -- Section 3.1 : Convergence of Sequences
 
 -- Definition of bounded for sequences
-def seq_bdd_above (a : ℕ → ℝ) := bdd_above (a '' set.univ)
-def seq_bdd_below (a : ℕ → ℝ) := bdd_below (a '' set.univ)
+def seq_bdd_above (a : ℕ → ℝ) := bdd_above (set.range a)
+def seq_bdd_below (a : ℕ → ℝ) := bdd_below (set.range a)
 def seq_bdd (a : ℕ → ℝ) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
 -- Definition of limit
@@ -455,25 +455,18 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
 end
 
 -- Theorem 3.13 (Monotone convergence theorem)
-theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (a '' set.univ)) := begin
-  set l := real.Sup (a '' set.univ),
+theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (set.range a)) := begin
+  set l := real.Sup (set.range a),
   intros ε hε,
-  have h : is_lub (a '' set.univ) l := by {
-    unfold seq_bdd_above at ha',
+  have h : is_lub (set.range a) l := begin 
     cases ha' with b hb,
-    refine real.is_lub_Sup _ _,
-    show a 0 ∈ a '' set.univ, by {
-      rw set.mem_image_eq,
-      existsi 0,
-      simp,
-    },
-    show b ∈ upper_bounds (a '' set.univ), from hb,
-  },
+    exact real.is_lub_Sup (set.mem_range_self 0) hb,
+  end,
   have h' : l - ε < l := by linarith only [hε],
   rw lt_is_lub_iff h at h',
-  rcases h' with ⟨x, ⟨⟨N, ⟨h'', hx⟩⟩, haN⟩⟩,
+  rcases h' with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
   rw ←hx at haN,
-  clear h'' h hx x,
+  clear h hx x,
   existsi N,
   intros n hn,
   rw abs_lt,
@@ -483,28 +476,25 @@ theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : monotone a) (ha' :
   },
   { refine lt_of_le_of_lt _ hε,
     rw sub_nonpos,
-    refine real.le_Sup _ ha' _,
-    rw set.mem_image_eq,
-    existsi n,
-    simp,
+    exact real.le_Sup (set.range a) ha' (set.mem_range_self n),
   }
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
-  have hlab := lim_sub_eq_sub_lim hla hlb,
-  clear hla hlb,
-  rw ←sub_nonpos,
-  by_contradiction h',
-  rw not_le at h',
-  cases hlab (la - lb) h' with N hN,
-  replace hN := hN N (le_refl N),
-  rw abs_lt at hN,
-  replace hN := hN.1,
-  simp at hN,
+theorem lim_le_of_seq_le {a b : ℕ → ℝ} {la lb : ℝ} {hab : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
+  by_contradiction h,
+  rw [not_le, ←sub_pos] at h,
+  cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
+  replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
+  simp [neg_lt_zero] at hN,
   unfold sub_seq at hN,
   rw sub_pos at hN,
-  exact lt_irrefl _ (lt_of_lt_of_le hN (h N)),
+  exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
+end
+
+-- Example 3.15
+example (a : ℕ → ℝ) (L : ℝ) (hL : L < 1) (hL' : is_limit (λ n, (a (n + 1)) / (a n)) L) : is_limit a 0 := begin
+  sorry
 end
 
 end MATH40002
