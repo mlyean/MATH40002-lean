@@ -274,8 +274,84 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
 end
 
 theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) (hlb' : lb ≠ 0) : is_limit (seq_div a b) (la / lb) := begin
+  have hla' : 4 * abs la + 1 > 0 := by linarith only [abs_nonneg la],
+  have hlb'' : abs lb > 0 := abs_pos_of_ne_zero hlb',
   intros ε hε,
-  sorry
+  cases hlb (abs lb / 2) (div_pos hlb'' zero_lt_two) with N₁ hN₁,
+  have hN₁' : ∀ n ≥ N₁, abs (b n) > abs lb / 2 := begin
+    intros n Hn,
+    have h : abs lb - abs (b n) < abs lb / 2 := calc
+      abs lb - abs (b n) ≤ abs (lb - b n) : abs_sub_abs_le_abs_sub lb (b n)
+        ... = abs (b n - lb) : by rw abs_sub
+        ... < abs lb / 2 : hN₁ n Hn,
+    rw sub_lt_iff_lt_add at h,
+    linarith only [h],
+  end,
+  clear hN₁,
+  rename hN₁' hN₁,
+  cases hla (ε * abs lb / 4) _ with N₂ hN₂,
+  cases hlb (ε * (abs lb) ^ 2 / (4 * abs la + 1)) _ with N₃ hN₃,
+  show ε * abs lb / 4 > 0, from div_pos (mul_pos hε hlb'') (by norm_num),
+  show ε * abs lb ^ 2 / (4 * abs la + 1) > 0, from div_pos (mul_pos hε (pow_pos hlb'' 2)) hla',
+  let N := max N₁ (max N₂ N₃),
+  existsi N,
+  intros n Hn,
+  replace hN₁ := hN₁ n (le_trans (le_max_left _ _) Hn),
+  replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) Hn),
+  replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) Hn),
+  unfold seq_div,
+  have hbn : b n ≠ 0 := abs_pos_iff.mp (lt_trans (half_pos hlb'') hN₁),
+  have h_main : abs ((a n - la) * lb + la * (lb - b n)) < (abs lb * abs lb) / 2 * ε := calc
+    abs ((a n - la) * lb + la * (lb - b n)) ≤ abs ((a n - la) * lb) + abs (la * (lb - b n)) : abs_add _ _
+      ... = abs (a n - la) * abs lb + abs la * abs (b n - lb) : by rw [abs_mul, abs_mul, abs_sub lb (b n)]
+      ... < (ε * abs lb / 4) * abs lb + abs la * ε * abs lb ^ 2 / (4 * abs la + 1) : by {
+        refine add_lt_add_of_lt_of_le _ _,
+        { exact mul_lt_mul_of_pos_right hN₂ hlb'' },
+        { have hsimp : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
+          rw hsimp,
+          exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
+        }
+      }
+      ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by {rw pow_two, ring}
+      ... < (ε * abs lb * abs lb) * (1 / 2) : by {
+        refine mul_lt_mul_of_pos_left _ _,
+        { have hsimp : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
+          rw [hsimp, add_lt_add_iff_left, div_lt_iff hla'],
+          linarith,
+        },
+        { exact mul_pos (mul_pos hε hlb'') hlb'' }
+      }
+      ... = (abs lb * abs lb) / 2 * ε : by ring,
+  calc
+    abs (a n / b n - la / lb) = abs ((a n * lb - b n * la) / (b n * lb)) : by {
+        apply congr_arg,
+        exact div_sub_div (a n) la hbn hlb'
+      }
+      ... = abs (a n * lb - b n * la) / abs (b n * lb) : by rw abs_div
+      ... = abs (a n * lb - b n * la) / (abs (b n) * abs lb) : by rw abs_mul
+      ... = abs (a n * lb - b n * la) / (abs lb * abs (b n)) : by rw mul_comm (abs (b n)) (abs lb)
+      ... = (abs (a n * lb - b n * la) / abs lb) * (1 / abs (b n)) : by rw div_mul_eq_div_mul_one_div 
+      ... ≤ (abs (a n * lb - b n * la) / abs lb) * (2 / abs lb) : by {
+        refine mul_le_mul_of_nonneg_left _ _,
+        { rw div_le_div_iff,
+          { linarith only [hN₁] },
+          { exact abs_pos_of_ne_zero hbn },
+          { exact hlb'' }
+        },
+        { exact div_nonneg (abs_nonneg _) hlb'' }
+      }
+      ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
+      ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : by {
+        apply congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))),
+        ring
+      }
+      ... < ((abs lb * abs lb) / 2 * ε) * (2 / (abs lb * abs lb)) : by {
+        refine mul_lt_mul_of_pos_right h_main _,
+        refine div_pos _ _,
+        { norm_num },
+        { exact mul_pos' hlb'' hlb'' }
+      }
+      ... = ε : by { field_simp [ne_of_gt hlb''], ring },
 end
 
 end MATH40002
