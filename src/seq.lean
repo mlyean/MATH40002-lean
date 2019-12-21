@@ -216,12 +216,13 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
 end
 
 -- Some operations on sequences
-def seq_add (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
-def seq_mul (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
-noncomputable def seq_div (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
+def const_seq (x : ℝ) : ℕ → ℝ := λ _, x
+def add_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n + b n
+def mul_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n * b n
+noncomputable def div_seq (a b : ℕ → ℝ) : ℕ → ℝ := λ n, a n / b n
 
 -- Theorem 3.11 (Algebra of limits)
-theorem limit_seq_add {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (seq_add a b) (la + lb) := begin
+theorem lim_add_eq_add_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (add_seq a b) (la + lb) := begin
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
   cases hlb (ε / 2) (half_pos hε) with Nb hNb,
@@ -230,15 +231,15 @@ theorem limit_seq_add {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   intros n Hn,
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
-  unfold seq_add,
+  unfold add_seq,
   calc
-    abs (a n + b n - (la + lb)) = abs ((a n - la) + (b n - lb)) : by ring
+    abs (a n + b n - (la + lb)) = abs ((a n - la) + (b n - lb)) : congr_arg abs (by ring)
       ... ≤ abs (a n - la) + abs (b n - lb) : abs_add (a n - la) (b n - lb)
       ... < ε / 2 + ε / 2 : add_lt_add hNa hNb
       ... = ε : add_halves ε,
 end
 
-theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (seq_mul a b) (la * lb) := begin
+theorem lim_mul_eq_mul_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (mul_seq a b) (la * lb) := begin
   intros ε hε,
   rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
   have H : 2 * (abs lb + 1) > 0 := mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
@@ -252,7 +253,7 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   replace hA₂ := hA₂ n,
-  unfold seq_mul,
+  unfold mul_seq,
   have h₁ : abs (a n - la) * abs lb < ε / 2 := calc
       abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
         ... = ε * abs lb / (2 * (abs lb + 1)) : by field_simp
@@ -273,7 +274,7 @@ theorem limit_seq_mul {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
       ... = ε : add_halves ε,
 end
 
-theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) (hlb' : lb ≠ 0) : is_limit (seq_div a b) (la / lb) := begin
+theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) (hlb' : lb ≠ 0) : is_limit (div_seq a b) (la / lb) := begin
   have hla' : 4 * abs la + 1 > 0 := by linarith only [abs_nonneg la],
   have hlb'' : abs lb > 0 := abs_pos_of_ne_zero hlb',
   intros ε hε,
@@ -298,7 +299,7 @@ theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
   rename hN₁' hN₁,
   replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) Hn),
   replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) Hn),
-  unfold seq_div,
+  unfold div_seq,
   have hbn : b n ≠ 0 := abs_pos_iff.mp (lt_trans (half_pos hlb'') hN₁),
   have h_main : abs ((a n - la) * lb + la * (lb - b n)) < ε * abs lb * abs lb / 2 := calc
     abs ((a n - la) * lb + la * (lb - b n)) ≤ abs ((a n - la) * lb) + abs (la * (lb - b n)) : abs_add _ _
@@ -339,15 +340,16 @@ theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
 end
 
 -- Some useful limits (not in notes)
-lemma limit_of_const_seq {a : ℝ} : is_limit (λ _, a) a := begin
+lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
   intros ε hε,
   existsi 0,
   intros n Hn,
+  unfold const_seq,
   rw [sub_self, abs_zero],
   exact hε,
 end
 
-lemma limit_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
+lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
   { conv { congr, funext, rw [zero_add, pow_one] },
     exact limit_of_reciprocal,
@@ -357,8 +359,8 @@ lemma limit_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1
       { funext, rw [pow_succ, ←one_div_mul_one_div] },
       { rw ←mul_zero (0 : ℝ) }
     },
-    change is_limit (seq_mul (λ n, 1 / (↑n + 1)) (λ n, (1 / (↑n + 1) ^ (k + 1)))) (0 * 0),
-    exact limit_seq_mul limit_of_reciprocal hk,
+    change is_limit (mul_seq (λ n, 1 / (↑n + 1)) (λ n, (1 / (↑n + 1) ^ (k + 1)))) (0 * 0),
+    exact lim_mul_eq_mul_lim limit_of_reciprocal hk,
   }
 end
 
@@ -383,47 +385,43 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
   end,
   conv_rhs at hsimp {
     change
-      seq_div
-        (seq_add
+      div_seq
+        (add_seq
           (λ n, 1 / (↑n + 1))
-          (seq_mul
-            (λ n, 5)
+          (mul_seq
+            (const_seq 5)
             (λ n, 1 / (↑n + 1) ^ 3)))
-        (seq_add
-          (seq_add
-            (λ n, 1)
-            (seq_mul
-              (λ n, -1)
+        (add_seq
+          (add_seq
+            (const_seq 1)
+            (mul_seq
+              (const_seq (-1))
               (λ n, 1 / (↑n + 1) ^ 2)))
-          (seq_mul
-            (λ n, 6)
-            (λ n, 1 / (↑n + 1) ^ 3))
+          (mul_seq
+            (const_seq 6)
+            (λ n, 1 / (↑n + 1) ^ 3)))
   },
   have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 + (-1) * 0 + 6 * 0) := by norm_num,
-  conv {
-    congr,
-    { rw hsimp },
-    { rw hsimp' }
-  },
-  refine limit_seq_div _ _ (by norm_num),
-  { refine limit_seq_add _ _,
+  conv { congr, { rw hsimp }, { rw hsimp' } },
+  refine lim_div_eq_div_lim _ _ (by norm_num),
+  { refine lim_add_eq_add_lim _ _,
     { exact limit_of_reciprocal },
-    { refine limit_seq_mul _ _,
-      { exact limit_of_const_seq },
-      { exact limit_of_neg_pow }
+    { refine lim_mul_eq_mul_lim _ _,
+      { exact lim_of_const_seq },
+      { exact lim_of_neg_pow }
     },
   },
-  { refine limit_seq_add _ _,
-    { refine limit_seq_add _ _,
-      { exact limit_of_const_seq },
-      { refine limit_seq_mul _ _,
-        { exact limit_of_const_seq },
-        { exact limit_of_neg_pow }
+  { refine lim_add_eq_add_lim _ _,
+    { refine lim_add_eq_add_lim _ _,
+      { exact lim_of_const_seq },
+      { refine lim_mul_eq_mul_lim _ _,
+        { exact lim_of_const_seq },
+        { exact lim_of_neg_pow }
       }
     },
-    { refine limit_seq_mul _ _,
-      { exact limit_of_const_seq },
-      { exact limit_of_neg_pow },
+    { refine lim_mul_eq_mul_lim _ _,
+      { exact lim_of_const_seq },
+      { exact lim_of_neg_pow },
     }
   },
 end
