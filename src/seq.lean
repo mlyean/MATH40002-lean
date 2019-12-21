@@ -35,9 +35,7 @@ lemma seq_converges_of_has_limit {a : ℕ → ℝ} {l : ℝ} : is_limit a l → 
 end
 
 lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
-  unfold seq_diverges,
-  unfold seq_converges,
-  unfold is_limit,
+  unfold seq_diverges seq_converges is_limit,
   push_neg,
   simp,
 end
@@ -374,10 +372,7 @@ end
 theorem lim_sub_eq_sub_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (sub_seq a b) (la - lb) := begin
   have hsimp : sub_seq a b = add_seq a (mul_seq (const_seq (-1)) b) := begin
     funext,
-    unfold sub_seq,
-    unfold add_seq,
-    unfold mul_seq,
-    unfold const_seq,
+    unfold sub_seq add_seq mul_seq const_seq,
     ring,
   end,
   have hsimp' : la - lb = la + (-1) * lb := by ring,
@@ -403,6 +398,10 @@ lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))
     change is_limit (mul_seq (λ n, 1 / (↑n + 1)) (λ n, (1 / (↑n + 1) ^ (k + 1)))) (0 * 0),
     exact lim_mul_eq_mul_lim limit_of_reciprocal hk,
   }
+end
+
+lemma lim_of_exp (x : ℝ) (hx : abs x < 1) : is_limit (λ n, x ^ n) 0 := begin
+  sorry,
 end
 
 -- Remark 3.12
