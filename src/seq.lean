@@ -73,10 +73,22 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   have hn' : 0 < (↑n : ℝ) + 1 := nat.cast_add_one_pos n,
   rw abs_of_pos,
   { calc
-      (↑n + 5) / (↑n + 1) - 1 = (↑n + 5) / (↑n + 1) - (↑n + 1) / (↑n + 1) : by { simp, refine (div_self _).symm, rw add_comm, exact ne_of_gt hn' }
+      (↑n + 5) / (↑n + 1) - 1 = (↑n + 5) / (↑n + 1) - (↑n + 1) / (↑n + 1) : by {
+          simp,
+          refine (div_self _).symm,
+          rw add_comm,
+          exact ne_of_gt hn'
+        }
         ... = 4 / ((↑n : ℝ) + 1) : by ring
-        ... < 4 / ((↑N : ℝ) + 1) : by { rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN', norm_cast, exact add_lt_add_right hn 1 }
-        ... < ε : by { rw div_lt_iff'' hN' hε, exact lt_trans hN (lt_add_one ↑N) },
+        ... < 4 / ((↑N : ℝ) + 1) : by {
+          rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN',
+          norm_cast,
+          exact add_lt_add_right hn 1
+        }
+        ... < ε : by {
+          rw div_lt_iff'' hN' hε,
+          exact lt_trans hN (lt_add_one ↑N)
+        },
   },
   { rw [gt_iff_lt, sub_pos],
     refine one_lt_div_of_lt (↑n + 5) hn' _,
@@ -105,8 +117,15 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
         field_simp [hn],
         norm_num,
       }
-      ... = 4 / ((n : ℝ) - 2) : by { refine abs_of_pos (div_pos (by norm_num) _), rw sub_pos, exact hn_gt_2 }
-      ... < 4 / ((n : ℝ) / 2) : by { rw div_lt_div_left, all_goals { linarith [hn_gt_4] } }
+      ... = 4 / ((n : ℝ) - 2) : by {
+        refine abs_of_pos (div_pos (by norm_num) _),
+        rw sub_pos,
+        exact hn_gt_2
+      }
+      ... < 4 / ((n : ℝ) / 2) : by {
+        rw div_lt_div_left,
+        all_goals { linarith [hn_gt_4] }
+      }
       ... = 8 / (n : ℝ) : by { rw div_div_eq_mul_div, ring }
       ... < ε : by {
         rw div_lt_iff'' hn_pos hε,
@@ -186,7 +205,7 @@ lemma bdd_of_converges {a : ℕ → ℝ} : seq_converges a → seq_bdd a := begi
     calc
       M = max B (abs l + 1) : rfl
         ... ≥ abs l + 1 : le_max_right B (abs l + 1)
-        ... ≥ 0 + 1 : by {refine add_le_add_right (abs_nonneg l) 1 }
+        ... ≥ 0 + 1 : add_le_add_right (abs_nonneg l) 1
         ... = 1 : zero_add 1
         ... > 0 : zero_lt_one,
   existsi M,
@@ -312,7 +331,7 @@ theorem lim_div_eq_div_lim {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a l
           exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
         }
       }
-      ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by {rw pow_two, ring}
+      ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by { rw pow_two, ring }
       ... < (ε * abs lb * abs lb) * (1 / 2) : by {
         refine mul_lt_mul_of_pos_left _ (mul_pos (mul_pos hε hlb'') hlb''),
         have hsimp : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
