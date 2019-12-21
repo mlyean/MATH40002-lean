@@ -41,7 +41,7 @@ lemma seq_diverges_iff {a : ℕ → ℝ} : seq_diverges a ↔ ∀ (l : ℝ), ∃
 end
 
 -- Example 3.4
-example : is_limit (λ n, 1 / (n + 1)) 0 := begin
+lemma limit_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   intros ε hε,
   cases exists_nat_one_div_lt hε with N hN,
   existsi N,
@@ -336,6 +336,96 @@ theorem limit_seq_div {a b : ℕ → ℝ} {la lb : ℝ} (hla : is_limit a la) (h
       ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
       ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos (by norm_num) (mul_pos hlb'' hlb''))
       ... = ε : by { field_simp [ne_of_gt hlb''], ring },
+end
+
+-- Some useful limits (not in notes)
+lemma limit_of_const_seq {a : ℝ} : is_limit (λ _, a) a := begin
+  intros ε hε,
+  existsi 0,
+  intros n Hn,
+  rw [sub_self, abs_zero],
+  exact hε,
+end
+
+lemma limit_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
+  induction k with k hk,
+  { conv { congr, funext, rw [zero_add, pow_one] },
+    exact limit_of_reciprocal,
+  },
+  { conv {
+      congr,
+      { funext, rw [pow_succ, ←one_div_mul_one_div] },
+      { rw ←mul_zero (0 : ℝ) }
+    },
+    change is_limit (seq_mul (λ n, 1 / (↑n + 1)) (λ n, (1 / (↑n + 1) ^ (k + 1)))) (0 * 0),
+    exact limit_seq_mul limit_of_reciprocal hk,
+  }
+end
+
+-- Remark 3.12
+example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := begin
+  have hsimp : (λ (n : ℕ), (((↑n : ℝ) + 1) ^ 2 + 5) / ((↑n + 1) ^ 3 - (↑n + 1) + 6)) =
+    (λ (n : ℕ), (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1  + -1 * (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
+  begin
+    funext,
+    let m : ℝ := n + 1,
+    change (m ^ 2 + 5) / (m ^ 3 - m + 6) = (1 / m + 5 * (1 / m ^ 3)) / (1 + (-1) * (1 / m ^ 2) + 6 * (1 / m ^ 3)),
+    have hm : m ≠ 0 := by { change (↑n : ℝ) + 1 ≠ 0, norm_cast, norm_num },
+    have hm' : m ^ 3 ≠ 0 := pow_ne_zero 3 hm,
+    conv_rhs { rw ←mul_div_mul_right' _ _ hm' },
+    refine congr (congr_arg has_div.div _) _,
+    all_goals {
+      repeat { rw pow_succ },
+      field_simp [hm],
+      change m with n + 1,
+      ring,
+    },
+  end,
+  conv_rhs at hsimp {
+    change
+      seq_div
+        (seq_add
+          (λ n, 1 / (↑n + 1))
+          (seq_mul
+            (λ n, 5)
+            (λ n, 1 / (↑n + 1) ^ 3)))
+        (seq_add
+          (seq_add
+            (λ n, 1)
+            (seq_mul
+              (λ n, -1)
+              (λ n, 1 / (↑n + 1) ^ 2)))
+          (seq_mul
+            (λ n, 6)
+            (λ n, 1 / (↑n + 1) ^ 3))
+  },
+  have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 + (-1) * 0 + 6 * 0) := by norm_num,
+  conv {
+    congr,
+    { rw hsimp },
+    { rw hsimp' }
+  },
+  refine limit_seq_div _ _ (by norm_num),
+  { refine limit_seq_add _ _,
+    { exact limit_of_reciprocal },
+    { refine limit_seq_mul _ _,
+      { exact limit_of_const_seq },
+      { exact limit_of_neg_pow }
+    },
+  },
+  { refine limit_seq_add _ _,
+    { refine limit_seq_add _ _,
+      { exact limit_of_const_seq },
+      { refine limit_seq_mul _ _,
+        { exact limit_of_const_seq },
+        { exact limit_of_neg_pow }
+      }
+    },
+    { refine limit_seq_mul _ _,
+      { exact limit_of_const_seq },
+      { exact limit_of_neg_pow },
+    }
+  },
 end
 
 end MATH40002
