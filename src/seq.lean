@@ -432,4 +432,18 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
           lim_of_neg_pow)),
 end
 
+-- Definition of increasing and decreasing sequences
+def seq_increasing (a : ℕ → ℝ) := ∀ n, a n ≤ a (n + 1)
+def seq_decreasing (a : ℕ → ℝ) := ∀ n, a n ≥ a (n + 1)
+
+-- Theorem 3.13 (Monotone convergence theorem)
+theorem lim_of_bounded_increasing_seq {a : ℕ → ℝ} (ha : seq_increasing a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (a '' set.univ)) := begin
+  sorry,
+end
+
+-- Example 3.14 (Order limit theorem)
+theorem lim_le_lim {a b : ℕ → ℝ} {la lb : ℝ} {h : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : a ≤ b := begin
+  sorry,
+end
+
 end MATH40002
