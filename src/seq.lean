@@ -3,6 +3,7 @@ import data.set.intervals.basic
 
 namespace MATH40002
 
+open real_seq
 open classical
 
 local attribute [instance] classical.prop_decidable
@@ -411,9 +412,24 @@ end
 
 theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
   let b : seq := -a,
-  have hb : seq_increasing b := sorry,
-  have hb' : seq_bdd_above b := sorry,
-  sorry,
+  have hb : seq_increasing b := ha,
+  have hb' : seq_bdd_above b := begin
+    cases ha' with x hx,
+    existsi -x,
+    rintros y ⟨n, hn⟩,
+    rw ←hn,
+    change -(a n) ≤ -x,
+    rw neg_le_neg_iff,
+    exact hx (set.mem_range_self n),
+  end,
+  unfold real.Inf,
+  have h : {x : ℝ | -x ∈ set.range a} = set.range b := begin
+    sorry,
+  end,
+  rw h,
+  conv { congr, rw ←neg_neg a, change -b },
+  refine lim_neg_eq_neg_lim _,
+  exact lim_of_bounded_increasing_seq hb hb',
 end
 
 -- Example 3.14 (Order limit theorem)
