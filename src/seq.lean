@@ -455,7 +455,7 @@ theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} {hab : ∀ n, a n ≤ b n} (h
 end
 
 -- Problem Sheet 5: Question 1
-lemma bernoulli_inequality (n : ℕ) (x : ℝ) (hx : x > -1) : (1 + x) ^ n ≥ 1 + n * x := begin
+lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1 + n * x := begin
   induction n with n hn,
   { simp },
   { have hx' : 1 + x > 0 := by rwa [gt_iff_lt, ←sub_pos, sub_neg_eq_add, add_comm] at hx,
@@ -480,7 +480,7 @@ lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : is_limit (λ n, 1 / (1 + x) 
     1 / ε < N * x : by { rw ←div_lt_iff hx, rw div_div_eq_div_mul, exact hN }
       ... < 1 + N * x : lt_one_add (N * x)
       ... ≤ 1 + n * x : by { refine add_le_add_left _ 1, rw mul_le_mul_right hx, exact nat.cast_le.mpr hn }
-      ... ≤ (1 + x) ^ n : bernoulli_inequality n x (lt_trans (by norm_num) hx),
+      ... ≤ (1 + x) ^ n : bernoulli_inequality (lt_trans (by norm_num) hx),
 end
 
 lemma lim_of_geom_zero (r : ℝ) (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
@@ -512,8 +512,22 @@ end
 
 lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
   let x := r - 1,
-  intro M,
-  sorry,
+  simp at hr,
+  have hx : r = 1 + x := begin
+    change r = 1 + (r - 1),
+    simp,
+  end,
+  have hx' : x > 0 := sub_pos_of_lt hr,
+  intros M hM,
+  cases exists_nat_gt (M / x) with N hN,
+  existsi N,
+  intros n hn,
+  calc
+    r ^ n = (1 + x) ^ n : congr_fun (congr_arg pow hx) n
+      ... ≥ 1 + n * x : bernoulli_inequality (lt_trans (by norm_num) hx')
+      ... > n * x : lt_one_add (n * x)
+      ... ≥ N * x : by { rw [ge_iff_le, mul_le_mul_right hx'], exact nat.cast_le.mpr hn }
+      ... > M : (div_lt_iff hx').mp hN,
 end
 
 -- Example 3.15
