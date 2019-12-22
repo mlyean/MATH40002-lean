@@ -61,13 +61,16 @@ instance : add_comm_group seq := {
   add_comm := real_seq.add_comm,
 }
 
+-- Section 3.1
+section sec_3_1
+
 -- Boundedness
 def seq_bdd_above (a : seq) := bdd_above (set.range a)
 def seq_bdd_below (a : seq) := bdd_below (set.range a)
 def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
 -- Limits
-def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ (N : ℕ), ∀ n ≥ N, abs ((a n) - l) < ε
+def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ N, ∀ n ≥ N, abs ((a n) - l) < ε
 
 -- Convergence
 def seq_converges (a : seq) := ∃ (l : ℝ), is_limit a l
@@ -93,5 +96,14 @@ end
 def seq_increasing (a : seq) := monotone a
 def seq_decreasing (a : seq) := monotone (-a : seq)
 
+end sec_3_1
+
+-- Section 3.2
+section sec_3_2
+
+-- Cauchy
+def seq_cauchy (a : seq) := ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ N), abs (a n - a m) < ε
+
+end sec_3_2
 
 end real_seq

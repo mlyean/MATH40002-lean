@@ -14,6 +14,7 @@ lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c
 -- Chapter 3 : Sequences
 
 -- Section 3.1 : Convergence of Sequences
+section sec_3_1
 
 -- Example 3.4
 lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
@@ -531,8 +532,20 @@ lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
 end
 
 -- Example 3.15
-example (a : seq) (L : ℝ) (hL : L < 1) (hL' : is_limit (λ n, (a (n + 1)) / (a n)) L) : is_limit a 0 := begin
-  sorry
+example (a : seq) (L : ℝ) (hL : L < 1) (hL' : is_limit (λ n, abs (a (n + 1)) / (a n)) L) : is_limit a 0 := begin
+  sorry,
 end
+
+end sec_3_1
+
+-- Section 3.2 : Cauchy Sequences
+section sec_3_2
+
+lemma cauchy_of_converges (a : seq) : seq_converges a → seq_cauchy a := begin
+  intro ha,
+  sorry,
+end
+
+end sec_3_2
 
 end MATH40002
