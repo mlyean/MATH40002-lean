@@ -80,7 +80,7 @@ end
 
 -- Divergence
 def seq_diverges (a : seq) := ¬ seq_converges a
-def seq_diverges_to_pos_inf (a : seq) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
+def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n > M
 def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (-a)
 
 lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
