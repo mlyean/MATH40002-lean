@@ -1,6 +1,6 @@
 import data.real.basic
 
-namespace MATH40002
+namespace real_seq
 
 def seq : Type := ℕ → ℝ
 
@@ -32,6 +32,10 @@ lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0,
   simp,
 end
 
+-- Monotonicity
+def seq_increasing (a : seq) := monotone a
+def seq_decreasing (a : seq) := monotone (λ n, -a n)
+
 -- Basic operations on sequences
 def const_seq (x : ℝ) : seq := λ _, x
 def zero_seq : seq := const_seq 0
@@ -43,6 +47,7 @@ def neg_seq (a : seq) : seq := λ n, -a n
 def sub_seq (a b : seq) : seq := λ n, a n - b n
 noncomputable def div_seq (a b : seq) : seq := λ n, a n / b n
 
+-- Properties of sequences
 instance : has_zero seq := ⟨zero_seq⟩
 instance : has_one seq := ⟨one_seq⟩
 instance : has_add seq := ⟨add_seq⟩
@@ -52,8 +57,47 @@ instance : has_neg seq := ⟨neg_seq⟩
 instance : has_sub seq := ⟨sub_seq⟩
 noncomputable instance : has_div seq := ⟨div_seq⟩
 
--- Monotonicity
-def seq_increasing (a : seq) := monotone a
-def seq_decreasing (a : seq) := monotone (λ n, -a n)
+protected lemma add_assoc : ∀ a b c : seq, a + b + c = a + (b + c) := begin
+  intros a b c,
+  funext,
+  exact add_assoc (a n) (b n) (c n),
+end
 
-end MATH40002
+protected lemma zero_add (a : seq) : 0 + a = a := begin
+  funext,
+  change 0 + a n = a n,
+  exact zero_add (a n),
+end
+
+protected lemma add_zero (a : seq) : a + 0 = a := begin
+  funext,
+  change a n + 0 = a n,
+  exact add_zero (a n),
+end
+
+protected lemma add_left_neg : ∀ a : seq, -a + a = 0 := begin
+  intro a,
+  funext,
+  change (-a n + a n) = 0,
+  exact add_left_neg (a n),
+end
+
+protected lemma add_comm : ∀ a b : seq, a + b = b + a := begin
+  intros a b,
+  funext,
+  change a n + b n = b n + a n,
+  exact add_comm (a n) (b n),
+end
+
+instance : add_comm_group seq := {
+  add := real_seq.add_seq,
+  add_assoc := real_seq.add_assoc,
+  zero := real_seq.zero_seq,
+  zero_add := real_seq.zero_add,
+  add_zero := real_seq.add_zero,
+  neg := real_seq.neg_seq,
+  add_left_neg := real_seq.add_left_neg,
+  add_comm := real_seq.add_comm,
+}
+
+end real_seq
