@@ -343,7 +343,11 @@ end
 -- Some useful limits
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
-  { conv { congr, funext, rw [zero_add, pow_one] },
+  { conv {
+      congr,
+      funext,
+      rw [zero_add, pow_one]
+    },
     exact lim_of_reciprocal,
   },
   { conv {
@@ -367,7 +371,11 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
     all_goals { field_simp [hn], ring }
   end,
   have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 - 0 + 6 * 0) := by norm_num,
-  conv { congr, { rw hsimp }, { rw hsimp' } },
+  conv {
+    congr,
+    { rw hsimp },
+    { rw hsimp' }
+  },
   exact
     lim_div_eq_div_lim (by norm_num)
       (lim_add_eq_add_lim
@@ -459,16 +467,52 @@ lemma bernoulli_inequality (n : ℕ) (x : ℝ) (hx : x > -1) : (1 + x) ^ n ≥ 1
   }
 end
 
-lemma lim_of_geom_zero_aux (x : ℝ) (hx : x > 0) : is_limit (λ n, 1 / (1 + x) ^ n) 0 := begin
+lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : is_limit (λ n, 1 / (1 + x) ^ n) 0 := begin
   intros ε hε,
-  sorry,
+  cases exists_nat_gt (1 / (ε * x)) with N hN,
+  existsi N,
+  intros n hn,
+  have hx' : (1 + x) ^ n > 0 := pow_pos (add_pos zero_lt_one hx) n,
+  rw sub_zero,
+  rw abs_of_pos (one_div_pos_of_pos hx'),
+  rw div_lt_iff'' hx' hε,
+  calc
+    1 / ε < N * x : by { rw ←div_lt_iff hx, rw div_div_eq_div_mul, exact hN }
+      ... < 1 + N * x : lt_one_add (N * x)
+      ... ≤ 1 + n * x : by { refine add_le_add_left _ 1, rw mul_le_mul_right hx, exact nat.cast_le.mpr hn }
+      ... ≤ (1 + x) ^ n : bernoulli_inequality n x (lt_trans (by norm_num) hx),
 end
 
 lemma lim_of_geom_zero (r : ℝ) (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
-  sorry,
+  let x := 1 / r - 1,
+  cases hr with hr_pos hr_lt_one,
+  have hx' : ∀ (n : ℕ), r ^ n = 1 / (1 + x) ^ n := begin
+    have h : r = 1 / (1 + x) := begin
+      change r = 1 / (1 + (1 / r - 1)),
+      field_simp,
+    end,
+    intro n,
+    rw h,
+    refine one_div_pow _ n,
+    change 1 + (1 / r - 1) ≠ 0,
+    simp,
+    exact ne_of_gt hr_pos,
+  end,
+  conv {
+    congr,
+    { funext,
+      rw hx'
+    }
+  },
+  refine lim_of_geom_zero_aux _,
+  change 0 < (1 / r) - 1,
+  rw sub_pos,
+  exact one_lt_one_div hr_pos hr_lt_one,
 end
 
 lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
+  let x := r - 1,
+  intro M,
   sorry,
 end
 
