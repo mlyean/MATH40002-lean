@@ -4,38 +4,6 @@ namespace real_seq
 
 def seq : Type := ℕ → ℝ
 
--- Boundedness
-def seq_bdd_above (a : seq) := bdd_above (set.range a)
-def seq_bdd_below (a : seq) := bdd_below (set.range a)
-def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
-
--- Limits
-def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ (N : ℕ), ∀ n ≥ N, abs ((a n) - l) < ε
-
--- Convergence
-def seq_converges (a : seq) := ∃ (l : ℝ), is_limit a l
-
-lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_converges a := begin
-  intro H,
-  existsi l,
-  exact H,
-end
-
--- Divergence
-def seq_diverges (a : seq) := ¬ seq_converges a
-def seq_diverges_to_pos_inf (a : seq) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
-def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (λ n, -a n)
-
-lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
-  unfold seq_diverges seq_converges is_limit,
-  push_neg,
-  simp,
-end
-
--- Monotonicity
-def seq_increasing (a : seq) := monotone a
-def seq_decreasing (a : seq) := monotone (λ n, -a n)
-
 -- Basic operations on sequences
 def const_seq (x : ℝ) : seq := λ _, x
 def zero_seq : seq := const_seq 0
@@ -61,7 +29,6 @@ protected lemma add_assoc (a b c : seq) : a + b + c = a + (b + c) := begin
   funext,
   exact add_assoc (a n) (b n) (c n),
 end
-
 
 protected lemma zero_add (a : seq) : 0 + a = a := begin
   funext,
@@ -93,5 +60,38 @@ instance : add_comm_group seq := {
   add_left_neg := real_seq.add_left_neg,
   add_comm := real_seq.add_comm,
 }
+
+-- Boundedness
+def seq_bdd_above (a : seq) := bdd_above (set.range a)
+def seq_bdd_below (a : seq) := bdd_below (set.range a)
+def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
+
+-- Limits
+def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ (N : ℕ), ∀ n ≥ N, abs ((a n) - l) < ε
+
+-- Convergence
+def seq_converges (a : seq) := ∃ (l : ℝ), is_limit a l
+
+lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_converges a := begin
+  intro H,
+  existsi l,
+  exact H,
+end
+
+-- Divergence
+def seq_diverges (a : seq) := ¬ seq_converges a
+def seq_diverges_to_pos_inf (a : seq) := ∀ (M : ℕ), ∃ N, ∀ n ≥ N, a n > M
+def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (-a)
+
+lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
+  unfold seq_diverges seq_converges is_limit,
+  push_neg,
+  simp,
+end
+
+-- Monotonicity
+def seq_increasing (a : seq) := monotone a
+def seq_decreasing (a : seq) := monotone (-a : seq)
+
 
 end real_seq
