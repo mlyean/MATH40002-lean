@@ -412,31 +412,26 @@ end
 
 theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
   let b : seq := -a,
-  have hb : seq_increasing b := ha,
-  have hb' : seq_bdd_above b := begin
-    cases ha' with x hx,
-    existsi -x,
-    rintros y ⟨n, hn⟩,
-    rw ←hn,
-    change -(a n) ≤ -x,
-    rw neg_le_neg_iff,
-    exact hx (set.mem_range_self n),
+  have h : set.range a = (λ x, -x) '' set.range (b : seq) := begin
+    rw ←neg_neg a,
+    exact set.range_comp,
   end,
-  unfold real.Inf,
-  have h : {x : ℝ | -x ∈ set.range a} = set.range b := begin
-    refine set.ext _,
-    intro x,
-    rw [set.mem_set_of_eq, set.mem_range, set.mem_range],
-    refine exists_congr _,
-    intro n,
-    change a n = -x ↔ -(a n) = x,
-    rw eq_comm,
-    exact neg_eq_iff_neg_eq,
-  end,
-  rw h,
-  conv { congr, rw ←neg_neg a, change -b },
+  conv {
+    congr,
+    { rw ←neg_neg a, change -b },
+    { rw h }
+  },
   refine lim_neg_eq_neg_lim _,
-  exact lim_of_bounded_increasing_seq hb hb',
+  simp,
+  refine lim_of_bounded_increasing_seq ha _,
+  cases ha' with x hx,
+  existsi -x,
+  rintros y ⟨n, hn⟩,
+  rw ←hn,
+  clear hn y,
+  change -(a n) ≤ -x,
+  rw neg_le_neg_iff,
+  exact hx (set.mem_range_self n),
 end
 
 -- Example 3.14 (Order limit theorem)
