@@ -1,4 +1,5 @@
 import seq_def
+import data.set.intervals.basic
 
 namespace MATH40002
 
@@ -86,7 +87,7 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
         refine congr_arg abs _,
         conv_lhs { congr, skip, rw ←div_self hn' },
         field_simp [hn],
-        ring,
+        ring
       }
       ... = 4 / ((n : ℝ) - 2) : by {
         refine abs_of_pos (div_pos (by norm_num) _),
@@ -309,7 +310,7 @@ theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (h
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
--- Some useful limits (not in notes)
+-- Additional stuff related to algebra of limits
 lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
   intros ε hε,
   existsi 0,
@@ -327,10 +328,18 @@ theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lim_mul_eq_mul_lim lim_of_const_seq hla,
 end
 
-theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a - b) (la - lb) := begin
-  exact lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb),
+theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a - b) (la - lb) :=
+  lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
+
+theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (λ n, abs (a n)) (abs la) := begin
+  intros ε hε,
+  cases hla ε hε with N hN,
+  existsi N,
+  intros n hn,
+  exact lt_of_le_of_lt (abs_abs_sub_abs_le_abs_sub (a n) la) (hN n hn),
 end
 
+-- Some useful limits
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
   { conv { congr, funext, rw [zero_add, pow_one] },
@@ -343,10 +352,6 @@ lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))
     },
     exact lim_mul_eq_mul_lim lim_of_reciprocal hk,
   }
-end
-
-lemma lim_of_exp (x : ℝ) (hx : abs x < 1) : is_limit (λ n, x ^ n) 0 := begin
-  sorry,
 end
 
 -- Remark 3.12
@@ -405,7 +410,7 @@ theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : s
 end
 
 theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
-  let b := -a,
+  let b : seq := -a,
   have hb : seq_increasing b := sorry,
   have hb' : seq_bdd_above b := sorry,
   sorry,
@@ -421,6 +426,32 @@ theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} {hab : ∀ n, a n ≤ b n} (h
   change 0 < a N - b N at hN,
   rw sub_pos at hN,
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
+end
+
+-- Problem Sheet 5: Question 1
+lemma bernoulli_inequality (n : ℕ) (x : ℝ) (hx : x > -1) : (1 + x) ^ n ≥ 1 + n * x := begin
+  induction n with n hn,
+  { simp },
+  { have hx' : 1 + x > 0 := by rwa [gt_iff_lt, ←sub_pos, sub_neg_eq_add, add_comm] at hx,
+    calc
+    (1 + x) ^ (n + 1) = (1 + x) * (1 + x) ^ n : by rw pow_succ
+      ... ≥ (1 + x) * (1 + n * x) : by { rw ge_iff_le, rw mul_le_mul_left hx', exact hn }
+      ... = 1 + (n + 1) * x + n * (x ^ 2) : by ring
+      ... ≥ 1 + (n + 1) * x : by { simp, exact mul_nonneg (nat.cast_nonneg n) (pow_two_nonneg x) },
+  }
+end
+
+lemma lim_of_geom_zero_aux (x : ℝ) (hx : x > 0) : is_limit (λ n, 1 / (1 + x) ^ n) 0 := begin
+  intros ε hε,
+  sorry,
+end
+
+lemma lim_of_geom_zero (r : ℝ) (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
+  sorry,
+end
+
+lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
+  sorry,
 end
 
 -- Example 3.15
