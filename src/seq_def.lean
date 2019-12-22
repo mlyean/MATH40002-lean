@@ -57,35 +57,29 @@ instance : has_neg seq := ⟨neg_seq⟩
 instance : has_sub seq := ⟨sub_seq⟩
 noncomputable instance : has_div seq := ⟨div_seq⟩
 
-protected lemma add_assoc : ∀ a b c : seq, a + b + c = a + (b + c) := begin
-  intros a b c,
+protected lemma add_assoc (a b c : seq) : a + b + c = a + (b + c) := begin
   funext,
   exact add_assoc (a n) (b n) (c n),
 end
 
+
 protected lemma zero_add (a : seq) : 0 + a = a := begin
   funext,
-  change 0 + a n = a n,
   exact zero_add (a n),
 end
 
 protected lemma add_zero (a : seq) : a + 0 = a := begin
   funext,
-  change a n + 0 = a n,
   exact add_zero (a n),
 end
 
-protected lemma add_left_neg : ∀ a : seq, -a + a = 0 := begin
-  intro a,
+protected lemma add_left_neg (a : seq) : -a + a = 0 := begin
   funext,
-  change (-a n + a n) = 0,
   exact add_left_neg (a n),
 end
 
-protected lemma add_comm : ∀ a b : seq, a + b = b + a := begin
-  intros a b,
+protected lemma add_comm (a b : seq) : a + b = b + a := begin
   funext,
-  change a n + b n = b n + a n,
   exact add_comm (a n) (b n),
 end
 
