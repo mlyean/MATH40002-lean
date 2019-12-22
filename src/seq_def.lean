@@ -9,7 +9,7 @@ def seq_bdd_above (a : seq) := bdd_above (set.range a)
 def seq_bdd_below (a : seq) := bdd_below (set.range a)
 def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
--- Limita
+-- Limits
 def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ (N : ℕ), ∀ n ≥ N, abs ((a n) - l) < ε
 
 -- Convergence
@@ -47,7 +47,7 @@ instance : has_zero seq := ⟨zero_seq⟩
 instance : has_one seq := ⟨one_seq⟩
 instance : has_add seq := ⟨add_seq⟩
 instance : has_mul seq := ⟨mul_seq⟩
-noncomputable instance : has_inv (seq) := ⟨inv_seq⟩
+noncomputable instance : has_inv seq := ⟨inv_seq⟩
 instance : has_neg seq := ⟨neg_seq⟩
 instance : has_sub seq := ⟨sub_seq⟩
 noncomputable instance : has_div seq := ⟨div_seq⟩
