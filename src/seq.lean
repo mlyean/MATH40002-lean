@@ -602,10 +602,32 @@ end sec_3_1
 -- Section 3.2 : Cauchy Sequences
 section sec_3_2
 
-lemma cauchy_of_converges (a : seq) : seq_converges a → seq_cauchy a := begin
-  intro ha,
+-- Proposition 3.17
+lemma cauchy_of_converges {a : seq} : seq_converges a → seq_cauchy a := begin
+  rintros ⟨l, hl⟩ ε hε,
+  cases hl (ε / 2) (half_pos hε) with N hN,
+  existsi N,
+  intros m hm n hn,
+  calc
+    abs (a n - a m) = abs ((a n - l) + (l - a m)) : by ring
+      ... ≤ abs (a n - l) + abs (l - a m) : abs_add (a n - l) (l - a m)
+      ... = abs (a n - l) + abs (a m - l) : by rw abs_sub l (a m)
+      ... < ε / 2 + ε / 2 : add_lt_add (hN n hn) (hN m hm)
+      ... = ε : add_halves ε,
+end
+
+-- Lemma 3.18
+lemma bounded_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   sorry,
 end
+
+-- Theorem 3.19
+theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
+  sorry,
+end
+
+-- Corollary 3.20
+theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨converges_of_cauchy, cauchy_of_converges⟩
 
 end sec_3_2
 
