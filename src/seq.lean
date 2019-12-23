@@ -631,4 +631,9 @@ theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨
 
 end sec_3_2
 
+-- Section 3.3 : Subsequences
+section sec_3_3
+
+end sec_3_3
+
 end MATH40002

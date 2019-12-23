@@ -61,7 +61,7 @@ instance : add_comm_group seq := {
   add_comm := real_seq.add_comm,
 }
 
--- Section 3.1
+-- Section 3.1 : Convergence of Sequences
 section sec_3_1
 
 -- Boundedness
@@ -98,12 +98,20 @@ def seq_decreasing (a : seq) := monotone (-a : seq)
 
 end sec_3_1
 
--- Section 3.2
+-- Section 3.2 : Cauchy Sequences
 section sec_3_2
 
 -- Cauchy
 def seq_cauchy (a : seq) := ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ N), abs (a n - a m) < ε
 
 end sec_3_2
+
+-- Section 3.3 : Subsequences
+section sec_3_3
+
+-- Subsequence
+def is_subseq_of (a : seq) (b : seq) := ∃ (p : ℕ → ℕ) (hp : monotone p), b = a ∘ p
+
+end sec_3_3
 
 end real_seq
