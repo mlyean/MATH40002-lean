@@ -551,7 +551,7 @@ example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is
     split,
     all_goals { linarith only [hL_bd.1, hL_bd.2] },
   end,
-  have hL'' : ∀ k, abs (a (N + k)) ≤ L' ^ k * abs (a N) := begin
+  have hL' : ∀ k, abs (a (N + k)) ≤ L' ^ k * abs (a N) := begin
     intro k,
     induction k with k hk,
     { simp },
@@ -582,23 +582,17 @@ example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is
   existsi N + M,
   intros n hn,
   cases nat.le.dest hn with k hk,
-  rw sub_zero,
-  rw ←hk,
+  rw [sub_zero, ←hk],
   replace hM := hM M (le_refl M),
   simp at hM,
-  rw lt_div_iff (abs_pos_of_ne_zero (ha N)) at hM,
-  rw abs_of_pos at hM,
-  show L' ^ M > 0, from pow_pos (hL'_bd.1) M,
-  replace hL'' := hL'' (M + k),
-  rw ←add_assoc at hL'',
+  rw [lt_div_iff (abs_pos_of_ne_zero (ha N)), abs_of_pos (pow_pos (hL'_bd.1) M)] at hM,
+  replace hL' := hL' (M + k),
+  rw ←add_assoc at hL',
   calc
-    abs (a (N + M + k)) ≤ L' ^ (M + k) * abs (a N) : hL''
+    abs (a (N + M + k)) ≤ L' ^ (M + k) * abs (a N) : hL'
       ... ≤ L' ^ M * abs (a N) : by {
-        rw mul_le_mul_right (abs_pos_of_ne_zero (ha N)),
-        rw pow_add,
-        rw mul_le_iff_le_one_right,
-        { exact pow_le_one k (le_of_lt hL'_bd.1) (le_of_lt hL'_bd.2) },
-        { exact pow_pos (hL'_bd.1) M }
+        rw [mul_le_mul_right (abs_pos_of_ne_zero (ha N)), pow_add, mul_le_iff_le_one_right (pow_pos (hL'_bd.1) M)],
+        exact pow_le_one k (le_of_lt hL'_bd.1) (le_of_lt hL'_bd.2)
       }
       ... < ε : hM,
 end
