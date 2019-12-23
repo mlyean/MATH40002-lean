@@ -28,8 +28,7 @@ lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   { refine lt_of_le_of_lt _ hN,
     rw one_div_le_one_div _ _,
     { norm_cast,
-      simp,
-      exact hn,
+      exact add_le_add_right hn 1,
     },
     exact nat.cast_add_one_pos n,
     exact nat.cast_add_one_pos N,
@@ -40,22 +39,22 @@ end
 -- Example 3.5
 example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   intros ε hε,
-  have hε' : 0 < 4 / ε := div_pos (by norm_num) hε,
+  have hε' : 0 < 4 / ε := div_pos four_pos hε,
   cases exists_nat_gt (4 / ε) with N hN,
   existsi N + 1,
   intros n hn,
-  change abs ((↑n + 5) / (↑n + 1) - 1) < ε,
-  have hN' : 0 < (↑N : ℝ) + 1 := nat.cast_add_one_pos N,
-  have hn' : 0 < (↑n : ℝ) + 1 := nat.cast_add_one_pos n,
+  change abs (((n : ℝ) + 5) / (n + 1) - 1) < ε,
+  have hN' : 0 < (N : ℝ) + 1 := nat.cast_add_one_pos N,
+  have hn' : 0 < (n : ℝ) + 1 := nat.cast_add_one_pos n,
   rw abs_of_pos,
   { calc
-      (↑n + 5) / (↑n + 1) - 1 = (↑n + 5) / (↑n + 1) - (↑n + 1) / (↑n + 1) : by {
+      ((n : ℝ) + 5) / (n + 1) - 1 = (n + 5) / (n + 1) - (n + 1) / (n + 1) : by {
           have h : 1 + (n : ℝ) ≠ 0 := by { norm_cast, norm_num },
           field_simp [h],
         }
-        ... = 4 / ((↑n : ℝ) + 1) : by ring
-        ... < 4 / ((↑N : ℝ) + 1) : by {
-          rw div_lt_div_left (by norm_num : (0 < (4 : ℝ))) hn' hN',
+        ... = 4 / ((n : ℝ) + 1) : by ring
+        ... < 4 / ((N : ℝ) + 1) : by {
+          rw div_lt_div_left four_pos hn' hN',
           norm_cast,
           exact add_lt_add_right hn 1
         }
@@ -65,7 +64,7 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
         },
   },
   { rw [gt_iff_lt, sub_pos],
-    refine one_lt_div_of_lt (↑n + 5) hn' _,
+    refine one_lt_div_of_lt (n + 5) hn' (add_lt_add_left _ n),
     norm_num,
   }
 end
@@ -81,13 +80,17 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
       ... > max 4 (8 / ε) : hN
       ... ≥ 4 : le_max_left 4 (8 / ε),
   have hn_gt_2 : (n : ℝ) > 2 := lt_trans (by norm_num) hn_gt_4,
-  have hn_pos : (n : ℝ) > 0 := lt_trans (by norm_num) hn_gt_4,
-  change abs ((↑n + 2) / (↑n - 2) - 1) < ε,
+  have hn_pos : (n : ℝ) > 0 := lt_trans four_pos hn_gt_4,
+  change abs (((n : ℝ) + 2) / (n - 2) - 1) < ε,
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
         have hn' : (n : ℝ) - 2 ≠ 0 := sub_ne_zero.mpr (ne_of_gt hn_gt_2),
         refine congr_arg abs _,
-        conv_lhs { congr, skip, rw ←div_self hn' },
+        conv_lhs {
+          congr,
+          skip,
+          rw ←div_self hn'
+        },
         field_simp [hn],
         ring
       }
@@ -126,14 +129,12 @@ example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
     have H : abs ((-1) ^ (2 * N + 1) * δ - l) < δ := hN (2 * N + 1) h₃,
     rw [neg_one_pow_eq_pow_mod_two, add_comm, nat.add_mul_mod_self_left] at H,
     change 1 % 2 with 1 at H,
-    rw [pow_one, neg_one_mul, ←abs_neg] at H,
-    simp at H,
-    exact H,
+    rwa [pow_one, neg_one_mul, ←abs_neg, sub_eq_add_neg, neg_add, neg_neg, neg_neg] at H,
   end,
   refine lt_irrefl (2 * δ) _,
   calc
     2 * δ = abs (2 * δ) : by rw abs_of_pos (mul_pos' zero_lt_two h₁)
-      ... = abs ((δ - l) + (δ + l)) : by simp [two_mul]
+      ... = abs ((δ - l) + (δ + l)) : by ring
       ... ≤ abs (δ - l) + abs (δ + l) : abs_add (δ - l) (δ + l)
       ... < δ + δ : add_lt_add h₄ h₅
       ... = 2 * δ : (two_mul δ).symm
@@ -198,7 +199,9 @@ lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
 end
 
 -- Theorem 3.11 (Algebra of limits)
-theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a + b) (la + lb) := begin
+theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
+  is_limit (a + b) (la + lb) :=
+begin
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
   cases hlb (ε / 2) (half_pos hε) with Nb hNb,
@@ -214,7 +217,9 @@ theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb 
       ... = ε : add_halves ε,
 end
 
-theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a * b) (la * lb) := begin
+theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
+  is_limit (a * b) (la * lb) :=
+begin
   intros ε hε,
   rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
   have H : 2 * (abs lb + 1) > 0 := mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
@@ -248,8 +253,10 @@ theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb 
       ... = ε : add_halves ε,
 end
 
-theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a / b) (la / lb) := begin
-  have hla' : 4 * abs la + 1 > 0 := by linarith only [abs_nonneg la],
+theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) :
+  is_limit (a / b) (la / lb) :=
+begin
+  have hla' : 4 * abs la + 1 > 0 := lt_of_le_of_lt (mul_nonneg (by norm_num) (abs_nonneg la)) (lt_add_one (4 * abs la)),
   have hlb' : abs lb > 0 := abs_pos_of_ne_zero hlb_ne_zero,
   intros ε hε,
   cases hlb (abs lb / 2) (div_pos hlb' zero_lt_two) with N₁ hN₁,
@@ -278,19 +285,17 @@ theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (h
     abs ((a n - la) * lb + la * (lb - b n)) ≤ abs ((a n - la) * lb) + abs (la * (lb - b n)) : abs_add _ _
       ... = abs (a n - la) * abs lb + abs la * abs (b n - lb) : by rw [abs_mul, abs_mul, abs_sub lb (b n)]
       ... < (ε * abs lb / 4) * abs lb + abs la * ε * abs lb ^ 2 / (4 * abs la + 1) : by {
-        refine add_lt_add_of_lt_of_le _ _,
-        { exact mul_lt_mul_of_pos_right hN₂ hlb' },
-        { have hsimp : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
-          rw hsimp,
-          exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
-        }
+        refine add_lt_add_of_lt_of_le (mul_lt_mul_of_pos_right hN₂ hlb') _,
+        have hsimp : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
+        rw hsimp,
+        exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
       }
       ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by { rw pow_two, ring }
       ... < (ε * abs lb * abs lb) * (1 / 2) : by {
         refine mul_lt_mul_of_pos_left _ (mul_pos (mul_pos hε hlb') hlb'),
         have hsimp : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
-        rw [hsimp, add_lt_add_iff_left, div_lt_iff hla'],
-        linarith,
+        rw [hsimp, add_lt_add_iff_left, div_lt_iff' hla', ←div_eq_mul_one_div, lt_div_iff' (by norm_num : (0 : ℝ) < 4)],
+        exact lt_add_one (4 * abs la),
       }
       ... = ε * abs lb * abs lb / 2 : by ring,
   calc
@@ -301,10 +306,9 @@ theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (h
       ... = (abs (a n * lb - b n * la) / abs lb) * (1 / abs (b n)) : by rw div_mul_eq_div_mul_one_div 
       ... ≤ (abs (a n * lb - b n * la) / abs lb) * (2 / abs lb) : by {
         refine mul_le_mul_of_nonneg_left _ (div_nonneg (abs_nonneg _) hlb'),
-        rw div_le_div_iff,
-        { linarith only [hN₁] },
-        { exact abs_pos_of_ne_zero hbn },
-        { exact hlb' }
+        rw [div_le_div_iff (abs_pos_of_ne_zero hbn) hlb', one_mul],
+        refine le_of_lt _,
+        rwa [gt_iff_lt, div_lt_iff' two_pos] at hN₁,
       }
       ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
       ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
@@ -330,8 +334,8 @@ theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lim_mul_eq_mul_lim lim_of_const_seq hla,
 end
 
-theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) : is_limit (a - b) (la - lb) :=
-  lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
+theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
+  is_limit (a - b) (la - lb) := lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
 
 theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (λ n, abs (a n)) (abs la) := begin
   intros ε hε,
@@ -449,7 +453,8 @@ theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (h
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
   replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
-  simp [neg_lt_zero] at hN,
+  simp at hN,
+  rw neg_lt_zero at hN,
   change 0 < a N - b N at hN,
   rw sub_pos at hN,
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
@@ -464,7 +469,7 @@ lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1
     (1 + x) ^ (n + 1) = (1 + x) * (1 + x) ^ n : by rw pow_succ
       ... ≥ (1 + x) * (1 + n * x) : by { rw ge_iff_le, rw mul_le_mul_left hx', exact hn }
       ... = 1 + (n + 1) * x + n * (x ^ 2) : by ring
-      ... ≥ 1 + (n + 1) * x : by { simp, exact mul_nonneg (nat.cast_nonneg n) (pow_two_nonneg x) },
+      ... ≥ 1 + (n + 1) * x : le_add_of_nonneg_right (mul_nonneg (nat.cast_nonneg n) (pow_two_nonneg x)),
   }
 end
 
@@ -495,7 +500,7 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_l
     intro n,
     rw h,
     refine one_div_pow _ n,
-    change 1 + (1 / r - 1) ≠ 0,
+    change ¬ 1 + (1 / r - 1) = 0,
     simp,
     exact ne_of_gt hr_pos,
   end,
@@ -516,7 +521,8 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
   simp at hr,
   have hx : r = 1 + x := begin
     change r = 1 + (r - 1),
-    simp,
+    rw add_eq_of_eq_sub',
+    refl,
   end,
   have hx' : x > 0 := sub_pos_of_lt hr,
   intros M hM,
@@ -554,7 +560,7 @@ example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is
   have hL' : ∀ k, abs (a (N + k)) ≤ L' ^ k * abs (a N) := begin
     intro k,
     induction k with k hk,
-    { simp },
+    { rw [add_zero, pow_zero, one_mul] },
     { calc
         abs (a (N + k + 1)) ≤ L' * abs (a (N + k)) : by {
             rw [←div_le_iff (abs_pos_of_ne_zero (ha (N + k))), ←abs_div],
