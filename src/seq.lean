@@ -618,7 +618,37 @@ end
 
 -- Lemma 3.18
 lemma bounded_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
-  sorry,
+  intro ha,
+  cases ha 1 zero_lt_one with N hN,
+  replace hN := hN N (le_refl N),
+  let head : finset ℝ := (finset.range (N + 1)).image (λ n, abs (a n)),
+  have head_has_mem : abs (a 0) ∈ head := begin
+    rw finset.mem_image,
+    existsi 0,
+    simp,
+  end,
+  cases finset.max_of_mem head_has_mem with B hB,
+  let M := max B (abs (a N) + 1),
+  have hM : M > 0 :=
+    calc
+      M ≥ abs (a N) + 1 : le_max_right B (abs (a N) + 1)
+        ... ≥ 0 + 1 : add_le_add_right (abs_nonneg (a N)) 1
+        ... = 1 : zero_add 1
+        ... > 0 : zero_lt_one,
+  existsi M,
+  existsi hM,
+  intro n,
+  cases le_or_gt n N with h h,
+  { refine le_trans (finset.le_max_of_mem _ hB) (le_max_left B (abs (a N) + 1)),
+    rw finset.mem_image,
+    existsi n,
+    simp,
+    exact nat.lt_succ_of_le h,
+  },
+  { have h' : abs (a n) - abs (a N) < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) (a N)) (hN n (le_of_lt h)),
+    rw sub_lt_iff_lt_add' at h',
+    exact le_trans (le_of_lt h') (le_max_right B (abs (a N) + 1)),
+  }
 end
 
 -- Theorem 3.19
