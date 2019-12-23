@@ -444,7 +444,7 @@ theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : se
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} {hab : ∀ n, a n ≤ b n} (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
+theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
   by_contradiction h,
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
@@ -484,7 +484,7 @@ lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : is_limit (λ n, 1 / (1 + x) 
       ... ≤ (1 + x) ^ n : bernoulli_inequality (lt_trans (by norm_num) hx),
 end
 
-lemma lim_of_geom_zero (r : ℝ) (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
+lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
   let x := 1 / r - 1,
   cases hr with hr_pos hr_lt_one,
   have hx' : ∀ (n : ℕ), r ^ n = 1 / (1 + x) ^ n := begin
@@ -511,7 +511,7 @@ lemma lim_of_geom_zero (r : ℝ) (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_l
   exact one_lt_one_div hr_pos hr_lt_one,
 end
 
-lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
+lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
   let x := r - 1,
   simp at hr,
   have hx : r = 1 + x := begin
@@ -532,8 +532,75 @@ lemma lim_of_geom_inf (r : ℝ) (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
 end
 
 -- Example 3.15
-example (a : seq) (L : ℝ) (hL : L < 1) (hL' : is_limit (λ n, abs (a (n + 1)) / (a n)) L) : is_limit a 0 := begin
-  sorry,
+example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is_limit (λ n, abs (a (n + 1) / a n)) L) : is_limit a 0 := begin
+  have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
+    split,
+    { refine lim_le_of_seq_le _ lim_of_const_seq hL,
+      intro n,
+      exact abs_nonneg _, 
+    },
+    { exact hL_lt_one },
+  end,
+  clear hL_lt_one,
+  intros ε hε,
+  cases hL ((1 - L) / 2) _ with N hN,
+  show (1 - L) / 2 > 0, from half_pos (sub_pos.2 hL_bd.2),
+  set L' := (1 + L) / 2,
+  have hL'_bd : L' ∈ set.Ioo (0 : ℝ) (1 : ℝ) := begin
+    change L' with (1 + L) / 2,
+    split,
+    all_goals { linarith only [hL_bd.1, hL_bd.2] },
+  end,
+  have hL'' : ∀ k, abs (a (N + k)) ≤ L' ^ k * abs (a N) := begin
+    intro k,
+    induction k with k hk,
+    { simp },
+    { calc
+        abs (a (N + k + 1)) ≤ L' * abs (a (N + k)) : by {
+            rw [←div_le_iff (abs_pos_of_ne_zero (ha (N + k))), ←abs_div],
+            refine le_of_lt _,
+            have h : L' = (1 - L) / 2 + L := begin
+              change (1 + L) / 2 = (1 - L) / 2 + L,
+              ring,
+            end,
+            rw h,
+            rw ←sub_lt_iff_lt_add,
+            refine lt_of_le_of_lt (le_abs_self _) _,
+            refine hN (N + k) _,
+            norm_num,
+          }
+          ... ≤ L' * (L' ^ k * abs (a N)) : by {
+            rw mul_le_mul_left _,
+            { exact hk },
+            { exact half_pos (lt_of_le_of_lt hL_bd.1 (lt_one_add L)) }
+          }
+          ... = L' ^ (k + 1) * abs (a N) : by { rw ←mul_assoc, refl },
+    }
+  end,
+  cases lim_of_geom_zero hL'_bd (ε / abs (a N)) _ with M hM,
+  show ε / abs (a N) > 0, from div_pos hε (abs_pos_of_ne_zero (ha N)),
+  existsi N + M,
+  intros n hn,
+  cases nat.le.dest hn with k hk,
+  rw sub_zero,
+  rw ←hk,
+  replace hM := hM M (le_refl M),
+  simp at hM,
+  rw lt_div_iff (abs_pos_of_ne_zero (ha N)) at hM,
+  rw abs_of_pos at hM,
+  show L' ^ M > 0, from pow_pos (hL'_bd.1) M,
+  replace hL'' := hL'' (M + k),
+  rw ←add_assoc at hL'',
+  calc
+    abs (a (N + M + k)) ≤ L' ^ (M + k) * abs (a N) : hL''
+      ... ≤ L' ^ M * abs (a N) : by {
+        rw mul_le_mul_right (abs_pos_of_ne_zero (ha N)),
+        rw pow_add,
+        rw mul_le_iff_le_one_right,
+        { exact pow_le_one k (le_of_lt hL'_bd.1) (le_of_lt hL'_bd.2) },
+        { exact pow_pos (hL'_bd.1) M }
+      }
+      ... < ε : hM,
 end
 
 end sec_3_1
