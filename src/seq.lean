@@ -9,7 +9,8 @@ open classical
 local attribute [instance] classical.prop_decidable
 
 -- Some useful lemmas
-lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c < b := by rw [div_lt_iff hb, div_lt_iff' hc]
+lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c < b :=
+  by rw [div_lt_iff hb, div_lt_iff' hc]
 
 -- Chapter 3 : Sequences
 
@@ -398,7 +399,9 @@ example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := 
 end
 
 -- Theorem 3.13 (Monotone convergence theorem)
-theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) : is_limit a (real.Sup (set.range a)) := begin
+theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
+  is_limit a (real.Sup (set.range a)) :=
+begin
   set l := real.Sup (set.range a),
   intros ε hε,
   have h : is_lub (set.range a) l := begin 
@@ -423,7 +426,9 @@ theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : s
   }
 end
 
-theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) : is_limit a (real.Inf (set.range a)) := begin
+theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) :
+  is_limit a (real.Inf (set.range a)) :=
+begin
   let b : seq := -a,
   have h : set.range a = (λ x, -x) '' set.range (b : seq) := begin
     rw ←neg_neg a,
@@ -448,7 +453,9 @@ theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : se
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : is_limit a la) (hlb : is_limit b lb) : la ≤ lb := begin
+theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : is_limit a la) (hlb : is_limit b lb) :
+  la ≤ lb :=
+begin
   by_contradiction h,
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
@@ -538,7 +545,9 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
 end
 
 -- Example 3.15
-example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is_limit (λ n, abs (a (n + 1) / a n)) L) : is_limit a 0 := begin
+example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is_limit (λ n, abs (a (n + 1) / a n)) L) :
+  is_limit a 0 :=
+begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
     split,
     { refine lim_le_of_seq_le _ lim_of_const_seq hL,
@@ -659,6 +668,7 @@ end
 
 -- Theorem 3.19
 theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
+  intro ha,
   sorry,
 end
 
