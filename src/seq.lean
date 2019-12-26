@@ -679,6 +679,14 @@ lemma Sup_subset_le_Sup {A B : set ℝ} (h : B ⊆ A) (ha_bdd : bdd_above A) (hb
   exact real.le_Sup A ha_bdd (h hx),
 end
 
+lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
+  intros ε hε,
+  cases hla ε hε with N hN,
+  existsi N,
+  intros n hn,
+  exact hN (n + k) (le_add_right hn),
+end
+
 -- Theorem 3.19
 theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
   intro ha,
@@ -734,8 +742,54 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     exact sub_lt_iff_lt_add'.mp hN',
   },
   { rw sub_le,
-    change a n - ε / 2 ≤ real.Inf (set.range b),
-    sorry,
+    have h : lb = real.Inf (b '' set.Ici N) := begin
+      have h' : is_limit (b ∘ (+ N)) lb := lim_of_tail N hb,
+      have h'' : is_limit (b ∘ (+ N)) (real.Inf (b '' set.Ici N)) := begin
+        have hsimp : b '' set.Ici N = set.range (b ∘ (+ N)) := begin
+          refine set.eq_of_subset_of_subset _ _,
+          { rintros x ⟨k, ⟨hk, hk'⟩⟩,
+            cases nat.exists_eq_add_of_le hk with r hr,
+            rw add_comm at hr,
+            rw [←hk', hr],
+            exact set.mem_range_self r,
+          },
+          { rintros x ⟨k, hk⟩,
+            change b (k + N) = x at hk,
+            rw ←hk,
+            exact set.mem_image_of_mem b (nat.le_add_left N k),
+          }
+        end,
+        rw hsimp,
+        refine lim_of_bounded_decreaing_seq _ _,
+        { intros n m hnm,
+          change -b (n + N) ≤ -b (m + N),
+          exact hb_decr (add_le_add_right hnm N),
+        },
+        { refine bdd_below_subset _ hb_bdd_below,
+          rintros x ⟨k, hk⟩,
+          change b (k + N) = x at hk,
+          rw ←hk,
+          exact set.mem_range_self (k + N),
+        }
+      end,
+      exact limit_unique h' h'',
+    end,
+    rw h,
+    rw real.le_Inf,
+    { rintros x ⟨k, ⟨hk, hk'⟩⟩,
+      rw ←hk',
+      change a n - ε / 2 ≤ real.Sup (a '' set.Ici k),
+      refine le_trans (le_of_lt _) _,
+      show a n - ε / 2 < a k, by {
+        rw sub_lt,
+        exact (abs_lt.1 (hN k hk n hn)).2,
+      },
+      exact real.le_Sup (a '' set.Ici k) (bdd_above_subset (set.image_subset_range a (set.Ici k)) (bdd_above_of_cauchy ha)) (set.mem_image_of_mem a set.left_mem_Ici),
+    },
+    { existsi b N,
+      exact set.mem_image_of_mem b set.left_mem_Ici,
+    },
+    { exact bdd_below_subset (set.image_subset_range b (set.Ici N)) hb_bdd_below }
   }
 end
 
