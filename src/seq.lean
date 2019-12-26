@@ -338,7 +338,7 @@ end
 theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
   is_limit (a - b) (la - lb) := lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
 
-theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (λ n, abs (a n)) (abs la) := begin
+theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (abs ∘ a) (abs la) := begin
   intros ε hε,
   cases hla ε hε with N hN,
   existsi N,
@@ -636,7 +636,7 @@ lemma bdd_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   intro ha,
   cases ha 1 zero_lt_one with N hN,
   replace hN := hN N (le_refl N),
-  let head : finset ℝ := (finset.range (N + 1)).image (λ n, abs (a n)),
+  let head : finset ℝ := (finset.range (N + 1)).image (abs ∘ a),
   have head_has_mem : abs (a 0) ∈ head := begin
     rw finset.mem_image,
     existsi 0,
@@ -687,9 +687,29 @@ lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limi
   exact hN (n + k) (le_add_right hn),
 end
 
+lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_above (a ∘ (+ k)) := 
+  bdd_above_subset (set.range_comp_subset_range (+ k) a) ha
+
+lemma bdd_below_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_below a) : seq_bdd_below (a ∘ (+ k)) := 
+  bdd_below_subset (set.range_comp_subset_range (+ k) a) ha
+
+lemma is_tail_iff {a : seq} {n : ℕ} : a '' set.Ici n = set.range (a ∘ (+ n)) := begin
+  rw set.range_comp,
+  refine congr rfl _,
+  rw set.ext_iff,
+  intro x,
+  simp,
+  split,
+  { exact nat.le.dest },
+  { rintro ⟨y, hy⟩,
+    exact nat.le.intro hy,
+  }
+end
+
 -- Theorem 3.19
 theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
   intro ha,
+  have ha_bdd_above := bdd_above_of_cauchy ha,
   let b : seq := λ n, real.Sup (a '' set.Ici n),
   have hb_decr : seq_decreasing b := begin
     intros n m hnm,
@@ -697,10 +717,10 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     rw neg_le_neg_iff,
     refine Sup_subset_le_Sup _ _ _,
     { refine set.image_subset a _,
-      intros k hk,
-      exact le_trans hnm hk,
+      intros k,
+      exact le_trans hnm,
     },
-    { refine bdd_above_subset _ (seq_bdd_above_of_bdd (bdd_of_cauchy ha)),
+    { refine bdd_above_subset _ (ha_bdd_above),
       exact set.image_subset_range a (set.Ici n),
     },
     { exact set.ne_empty_of_mem (set.mem_image_of_mem a set.left_mem_Ici) }
@@ -714,7 +734,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     change A ≤ real.Sup (a '' set.Ici n),
     refine le_trans (hA (set.mem_range_self n)) _,
     refine real.le_Sup (a '' set.Ici n) _ (set.mem_image_of_mem a set.left_mem_Ici),
-    exact bdd_above_subset (set.image_subset_range a (set.Ici n)) (bdd_above_of_cauchy ha),
+    exact bdd_above_subset (set.image_subset_range a (set.Ici n)) ha_bdd_above,
   end,
   have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
   set lb := real.Inf (set.range b),
@@ -737,9 +757,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     },
     rintros x ⟨k, ⟨hk, hk'⟩⟩,
     rw ←hk',
-    refine le_of_lt _,
-    have hN' := (abs_lt.1 (hN n hn k hk)).2,
-    exact sub_lt_iff_lt_add'.mp hN',
+    exact le_of_lt (sub_lt_iff_lt_add'.mp ((abs_lt.1 (hN n hn k hk)).2)),
   },
   { rw sub_le,
     have h : lb = real.Inf (b '' set.Ici N) := begin
@@ -784,7 +802,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
         rw sub_lt,
         exact (abs_lt.1 (hN k hk n hn)).2,
       },
-      exact real.le_Sup (a '' set.Ici k) (bdd_above_subset (set.image_subset_range a (set.Ici k)) (bdd_above_of_cauchy ha)) (set.mem_image_of_mem a set.left_mem_Ici),
+      exact real.le_Sup (a '' set.Ici k) (bdd_above_subset (set.image_subset_range a (set.Ici k)) ha_bdd_above) (set.mem_image_of_mem a set.left_mem_Ici),
     },
     { existsi b N,
       exact set.mem_image_of_mem b set.left_mem_Ici,
