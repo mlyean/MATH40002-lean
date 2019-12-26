@@ -632,7 +632,7 @@ lemma cauchy_of_converges {a : seq} : seq_converges a → seq_cauchy a := begin
 end
 
 -- Lemma 3.18
-lemma bounded_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
+lemma bdd_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   intro ha,
   cases ha 1 zero_lt_one with N hN,
   replace hN := hN N (le_refl N),
@@ -666,14 +666,74 @@ lemma bounded_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   }
 end
 
+lemma bdd_above_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_above a :=
+  λ ha, seq_bdd_above_of_bdd $ bdd_of_cauchy ha
+
+lemma bdd_below_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_below a :=
+  λ ha, seq_bdd_below_of_bdd $ bdd_of_cauchy ha
+
+-- Some lemmas for Theorem 3.19
+lemma Sup_subset_le_Sup {A B : set ℝ} (h : B ⊆ A) (ha_bdd : bdd_above A) (hb_nonempty : B ≠ ∅) : real.Sup B ≤ real.Sup A := begin
+  refine real.Sup_le_ub B (set.exists_mem_of_ne_empty hb_nonempty) _,
+  intros x hx,
+  exact real.le_Sup A ha_bdd (h hx),
+end
+
 -- Theorem 3.19
 theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
   intro ha,
-  sorry,
+  let b : seq := λ n, real.Sup (a '' set.Ici n),
+  have hb_decr : seq_decreasing b := begin
+    intros n m hnm,
+    change -real.Sup (a '' set.Ici n) ≤ -real.Sup (a '' set.Ici m),
+    rw neg_le_neg_iff,
+    refine Sup_subset_le_Sup _ _ _,
+    { refine set.image_subset a _,
+      intros k hk,
+      exact le_trans hnm hk,
+    },
+    { refine bdd_above_subset _ (seq_bdd_above_of_bdd (bdd_of_cauchy ha)),
+      exact set.image_subset_range a (set.Ici n),
+    },
+    { exact set.ne_empty_of_mem (set.mem_image_of_mem a set.left_mem_Ici) }
+  end,
+  have hb_bdd_below : seq_bdd_below b := begin
+    cases bdd_below_of_cauchy ha with A hA,
+    existsi A,
+    rintros x ⟨n, hx⟩,
+    rw ←hx,
+    clear hx x,
+    change A ≤ real.Sup (a '' set.Ici n),
+    refine le_trans (hA (set.mem_range_self n)) _,
+    refine real.le_Sup (a '' set.Ici n) _ (set.mem_image_of_mem a set.left_mem_Ici),
+    exact bdd_above_subset (set.image_subset_range a (set.Ici n)) (bdd_above_of_cauchy ha),
+  end,
+  have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
+  set lb := real.Inf (set.range b),
+  existsi lb,
+  intros ε hε,
+  cases ha (ε / 2) (half_pos hε) with N hN,
+  existsi N,
+  intros n hn,
+  refine lt_of_le_of_lt _ (half_lt_self hε),
+  rw abs_le,
+  split,
+  { sorry,
+  },
+  { sorry,
+
+  }
 end
 
 -- Corollary 3.20
 theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨converges_of_cauchy, cauchy_of_converges⟩
+
+-- Example 3.22
+example (M : ℝ) (S : set ℝ) (hS : S ≠ ∅) (hM : ∀ x ∈ S, x < M) : real.Sup S ≤ M := begin
+  refine real.Sup_le_ub S (set.exists_mem_of_ne_empty hS) _,
+  intros x hx,
+  exact le_of_lt (hM x hx),
+end
 
 end sec_3_2
 
