@@ -718,10 +718,24 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
   refine lt_of_le_of_lt _ (half_lt_self hε),
   rw abs_le,
   split,
-  { sorry,
+  { rw neg_le_sub_iff_le_add,
+    change real.Inf (set.range b) ≤ a n + ε / 2,
+    refine le_trans (real.Inf_le (set.range b) hb_bdd_below (set.mem_range_self N)) _,
+    change real.Sup (a '' set.Ici N) ≤ a n + ε / 2,
+    refine real.Sup_le_ub (a '' set.Ici N) _ _,
+    show ∃ (x : ℝ), x ∈ a '' set.Ici N, by {
+      existsi a N,
+      exact set.mem_image_of_mem a set.left_mem_Ici,
+    },
+    rintros x ⟨k, ⟨hk, hk'⟩⟩,
+    rw ←hk',
+    refine le_of_lt _,
+    have hN' := (abs_lt.1 (hN n hn k hk)).2,
+    exact sub_lt_iff_lt_add'.mp hN',
   },
-  { sorry,
-
+  { rw sub_le,
+    change a n - ε / 2 ≤ real.Inf (set.range b),
+    sorry,
   }
 end
 
