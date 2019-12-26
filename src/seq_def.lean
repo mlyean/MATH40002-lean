@@ -69,6 +69,22 @@ def seq_bdd_above (a : seq) := bdd_above (set.range a)
 def seq_bdd_below (a : seq) := bdd_below (set.range a)
 def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
+lemma seq_bdd_above_of_bdd {a : seq} (h : seq_bdd a) : seq_bdd_above a := begin
+  rcases h with ⟨A, ⟨hA, hA'⟩⟩,
+  existsi A,
+  rintros x ⟨n, hn⟩,
+  rw ←hn,
+  exact (abs_le.1 (hA' n)).2,
+end
+
+lemma seq_bdd_below_of_bdd {a : seq} (h : seq_bdd a) : seq_bdd_below a := begin
+  rcases h with ⟨A, ⟨hA, hA'⟩⟩,
+  existsi -A,
+  rintros x ⟨n, hn⟩,
+  rw ←hn,
+  exact (abs_le.1 (hA' n)).1,
+end
+
 -- Limits
 def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ N, ∀ n ≥ N, abs ((a n) - l) < ε
 
