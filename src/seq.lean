@@ -824,7 +824,7 @@ end
 -- Corollary 3.20
 theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨converges_of_cauchy, cauchy_of_converges⟩
 
--- Example 3.22
+-- Exercise 3.22
 example (M : ℝ) (S : set ℝ) (hS : S ≠ ∅) (hM : ∀ x ∈ S, x < M) : real.Sup S ≤ M := begin
   refine real.Sup_le_ub S (set.exists_mem_of_ne_empty hS) _,
   intros x hx,
@@ -835,6 +835,19 @@ end sec_3_2
 
 -- Section 3.3 : Subsequences
 section sec_3_3
+
+-- Exercise 3.24
+example (n : ℕ → ℕ) (hn : strict_mono n) : ∀ i, n i ≥ i := begin
+  intro i,
+  induction i with i hi,
+  { exact nat.zero_le (n 0) },
+  { exact nat.succ_le_of_lt (lt_of_le_of_lt hi (hn (nat.lt_succ_self i))) }
+end
+
+-- Theorem 3.26 (Bolzano-Weierstrass theorem)
+theorem exists_convergent_subseq_of_bdd {a : seq} (ha : seq_bdd a) : ∃ (n : ℕ → ℕ), seq_converges (a ∘ n) := begin
+  sorry,
+end
 
 end sec_3_3
 
