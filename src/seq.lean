@@ -346,6 +346,15 @@ theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lt_of_le_of_lt (abs_abs_sub_abs_le_abs_sub (a n) la) (hN n hn),
 end
 
+-- Limit of tail
+lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
+  intros ε hε,
+  cases hla ε hε with N hN,
+  existsi N,
+  intros n hn,
+  exact hN (n + k) (le_add_right hn),
+end
+
 -- Some useful limits
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
   induction k with k hk,
@@ -679,12 +688,10 @@ lemma Sup_subset_le_Sup {A B : set ℝ} (h : B ⊆ A) (ha_bdd : bdd_above A) (hb
   exact real.le_Sup A ha_bdd (h hx),
 end
 
-lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
-  intros ε hε,
-  cases hla ε hε with N hN,
-  existsi N,
-  intros n hn,
-  exact hN (n + k) (le_add_right hn),
+lemma Inf_le_Inf_subset {A B : set ℝ} (h : B ⊆ A) (ha_bdd : bdd_below A) (hb_nonempty : B ≠ ∅) : real.Inf A ≤ real.Inf B := begin
+  refine real.lb_le_Inf B (set.exists_mem_of_ne_empty hb_nonempty) _,
+  intros x hx,
+  exact real.Inf_le A ha_bdd (h hx),
 end
 
 lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_above (a ∘ (+ k)) := 
@@ -693,16 +700,51 @@ lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_abo
 lemma bdd_below_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_below a) : seq_bdd_below (a ∘ (+ k)) := 
   bdd_below_subset (set.range_comp_subset_range (+ k) a) ha
 
-lemma is_tail_iff {a : seq} {n : ℕ} : a '' set.Ici n = set.range (a ∘ (+ n)) := begin
-  rw set.range_comp,
-  refine congr rfl _,
-  rw set.ext_iff,
+lemma range_add_eq_Ici (n : ℕ) : set.range (+ n) = set.Ici n := begin
+  refine set.ext _,
   intro x,
   simp,
   split,
-  { exact nat.le.dest },
   { rintro ⟨y, hy⟩,
     exact nat.le.intro hy,
+  },
+  { exact nat.le.dest }
+end
+
+lemma range_add_subset_range_add {m n : ℕ} (h : m ≤ n) : set.range (+ n) ⊆ set.range (+ m) := begin
+  rw [range_add_eq_Ici, range_add_eq_Ici],
+  intros x hx,
+  exact le_trans h hx,
+end
+
+lemma Inf_decreasing_eq_Inf_tail {a : seq} (n : ℕ) (ha_decr : seq_decreasing a) (ha_bdd : seq_bdd_below a) :
+  real.Inf (set.range a) = real.Inf (set.range (a ∘ (+ n))) :=
+begin
+  refine le_antisymm _ _,
+  { refine Inf_le_Inf_subset _ ha_bdd _,
+    { exact set.range_comp_subset_range (+ n) a },
+    { exact set.range_ne_empty (a ∘ (+ n)) },
+  },
+  { refine real.lb_le_Inf (set.range a) _ _,
+    { exact set.exists_mem_of_ne_empty (set.range_ne_empty a) },
+    { rintros x ⟨k, hk⟩,
+      rw ←hk,
+      cases le_or_gt n k with h h,
+      { refine real.Inf_le (set.range (a ∘ (+ n))) (bdd_below_of_tail n ha_bdd) _,
+        rw set.range_comp,
+        refine set.mem_image_of_mem a _,
+        simp,
+        exact nat.le.dest h,
+      },
+      { replace h := ha_decr (le_of_lt h),
+        change -a k ≤ -a n at h,
+        rw neg_le_neg_iff at h,
+        refine le_trans _ h,
+        refine real.Inf_le (set.range (a ∘ (+ n))) (bdd_below_of_tail n ha_bdd) _,
+        existsi 0,
+        simp,
+      }
+    }
   }
 end
 
@@ -710,31 +752,29 @@ end
 theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begin
   intro ha,
   have ha_bdd_above := bdd_above_of_cauchy ha,
-  let b : seq := λ n, real.Sup (a '' set.Ici n),
+  let b : seq := λ n, real.Sup (set.range (a ∘ (+ n))),
   have hb_decr : seq_decreasing b := begin
-    intros n m hnm,
-    change -real.Sup (a '' set.Ici n) ≤ -real.Sup (a '' set.Ici m),
+    intros m n hmn,
+    change -real.Sup (set.range (a ∘ (+ m))) ≤ -real.Sup (set.range (a ∘ (+ n))),
     rw neg_le_neg_iff,
     refine Sup_subset_le_Sup _ _ _,
-    { refine set.image_subset a _,
-      intros k,
-      exact le_trans hnm,
+    { rw [set.range_comp, set.range_comp],
+      refine set.image_subset a _,
+      exact range_add_subset_range_add hmn,
     },
-    { refine bdd_above_subset _ (ha_bdd_above),
-      exact set.image_subset_range a (set.Ici n),
-    },
-    { exact set.ne_empty_of_mem (set.mem_image_of_mem a set.left_mem_Ici) }
+    { exact bdd_above_of_tail m ha_bdd_above },
+    { exact set.range_ne_empty (a ∘ (+ n)) }
   end,
   have hb_bdd_below : seq_bdd_below b := begin
     cases bdd_below_of_cauchy ha with A hA,
     existsi A,
-    rintros x ⟨n, hx⟩,
-    rw ←hx,
-    clear hx x,
-    change A ≤ real.Sup (a '' set.Ici n),
-    refine le_trans (hA (set.mem_range_self n)) _,
-    refine real.le_Sup (a '' set.Ici n) _ (set.mem_image_of_mem a set.left_mem_Ici),
-    exact bdd_above_subset (set.image_subset_range a (set.Ici n)) ha_bdd_above,
+    rintros x ⟨k, hk⟩,
+    rw ←hk,
+    change A ≤ real.Sup (set.range (a ∘ (+ k))),
+    refine le_trans (hA (set.mem_range_self k)) _,
+    refine real.le_Sup (set.range (a ∘ (+ k))) (bdd_above_of_tail k ha_bdd_above) _,
+    existsi 0,
+    simp,
   end,
   have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
   set lb := real.Inf (set.range b),
@@ -749,65 +789,35 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
   { rw neg_le_sub_iff_le_add,
     change real.Inf (set.range b) ≤ a n + ε / 2,
     refine le_trans (real.Inf_le (set.range b) hb_bdd_below (set.mem_range_self N)) _,
-    change real.Sup (a '' set.Ici N) ≤ a n + ε / 2,
-    refine real.Sup_le_ub (a '' set.Ici N) _ _,
-    show ∃ (x : ℝ), x ∈ a '' set.Ici N, by {
-      existsi a N,
-      exact set.mem_image_of_mem a set.left_mem_Ici,
-    },
-    rintros x ⟨k, ⟨hk, hk'⟩⟩,
-    rw ←hk',
-    exact le_of_lt (sub_lt_iff_lt_add'.mp ((abs_lt.1 (hN n hn k hk)).2)),
+    change real.Sup (set.range (a ∘ (+ N))) ≤ a n + ε / 2,
+    refine real.Sup_le_ub (set.range (a ∘ (+ N))) _ _,
+    show ∃ (x : ℝ), x ∈ set.range (a ∘ (+ N)), from set.exists_mem_of_ne_empty (set.range_ne_empty (a ∘ (+ N))),
+    rintros x ⟨k, hk⟩,
+    rw ←hk,
+    refine le_of_lt _,
+    have h := (abs_lt.1 (hN n hn (k + N) (nat.le_add_left N k))).2,
+    rw sub_lt_iff_lt_add' at h,
+    exact h,
   },
   { rw sub_le,
-    have h : lb = real.Inf (b '' set.Ici N) := begin
-      have h' : is_limit (b ∘ (+ N)) lb := lim_of_tail N hb,
-      have h'' : is_limit (b ∘ (+ N)) (real.Inf (b '' set.Ici N)) := begin
-        have hsimp : b '' set.Ici N = set.range (b ∘ (+ N)) := begin
-          refine set.eq_of_subset_of_subset _ _,
-          { rintros x ⟨k, ⟨hk, hk'⟩⟩,
-            cases nat.exists_eq_add_of_le hk with r hr,
-            rw add_comm at hr,
-            rw [←hk', hr],
-            exact set.mem_range_self r,
-          },
-          { rintros x ⟨k, hk⟩,
-            change b (k + N) = x at hk,
-            rw ←hk,
-            exact set.mem_image_of_mem b (nat.le_add_left N k),
-          }
-        end,
-        rw hsimp,
-        refine lim_of_bounded_decreaing_seq _ _,
-        { intros n m hnm,
-          change -b (n + N) ≤ -b (m + N),
-          exact hb_decr (add_le_add_right hnm N),
-        },
-        { refine bdd_below_subset _ hb_bdd_below,
-          rintros x ⟨k, hk⟩,
-          change b (k + N) = x at hk,
-          rw ←hk,
-          exact set.mem_range_self (k + N),
-        }
-      end,
-      exact limit_unique h' h'',
-    end,
+    have h : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
     rw h,
     rw real.le_Inf,
-    { rintros x ⟨k, ⟨hk, hk'⟩⟩,
-      rw ←hk',
-      change a n - ε / 2 ≤ real.Sup (a '' set.Ici k),
+    { rintros x ⟨k, hk⟩,
+      change b (k + N) = x at hk,
+      rw ←hk,
+      change a n - ε / 2 ≤ real.Sup (set.range (a ∘ (+ (k + N)))),
       refine le_trans (le_of_lt _) _,
-      show a n - ε / 2 < a k, by {
+      show a n - ε / 2 < a (k + N), by {
         rw sub_lt,
-        exact (abs_lt.1 (hN k hk n hn)).2,
+        exact (abs_lt.1 (hN (k + N) (nat.le_add_left N k) n hn)).2,
       },
-      exact real.le_Sup (a '' set.Ici k) (bdd_above_subset (set.image_subset_range a (set.Ici k)) ha_bdd_above) (set.mem_image_of_mem a set.left_mem_Ici),
+      refine real.le_Sup (set.range (a ∘ (+ (k + N)))) (bdd_above_of_tail (k + N) ha_bdd_above) _,
+      existsi 0,
+      simp,
     },
-    { existsi b N,
-      exact set.mem_image_of_mem b set.left_mem_Ici,
-    },
-    { exact bdd_below_subset (set.image_subset_range b (set.Ici N)) hb_bdd_below }
+    { exact set.exists_mem_of_ne_empty (set.range_ne_empty (b ∘ (+ N))) },
+    { exact bdd_below_of_tail N hb_bdd_below }
   }
 end
 
