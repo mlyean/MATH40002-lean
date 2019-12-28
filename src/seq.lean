@@ -112,7 +112,7 @@ example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
   by_contradiction h₂,
   cases h₂ with l hl,
   cases hl δ h₁ with N hN,
-  have h_even : N ≤ 2 * N := by { rw two_mul, exact nat.le_add_right N N },
+  have h_even : N ≤ 2 * N := nat.le_mul_of_pos_left zero_lt_two,
   have h_odd : N ≤ 2 * N + 1 := nat.le_succ_of_le h_even,
   replace h_even : abs (δ - l) < δ := begin
     have H : abs ((-1) ^ (2 * N) * δ - l) < δ := hN (2 * N) h_even,
@@ -290,15 +290,15 @@ begin
       ... = ε * abs lb * abs lb / 2 : by ring,
   calc
     abs (a n / b n - la / lb) = abs ((a n * lb - b n * la) / (b n * lb)) : congr_arg abs (div_sub_div (a n) la hbn hlb_ne_zero)
-      ... = abs (a n * lb - b n * la) / abs (b n * lb) : by rw abs_div
+      ... = abs (a n * lb - b n * la) / abs (b n * lb) : abs_div _ _
       ... = abs (a n * lb - b n * la) / (abs (b n) * abs lb) : by rw abs_mul
       ... = abs (a n * lb - b n * la) / (abs lb * abs (b n)) : by rw mul_comm (abs (b n)) (abs lb)
       ... = (abs (a n * lb - b n * la) / abs lb) * (1 / abs (b n)) : by rw div_mul_eq_div_mul_one_div 
       ... ≤ (abs (a n * lb - b n * la) / abs lb) * (2 / abs lb) : by {
         refine mul_le_mul_of_nonneg_left _ (div_nonneg (abs_nonneg _) hlb'),
         rw [div_le_div_iff (abs_pos_of_ne_zero hbn) hlb', one_mul],
-        refine le_of_lt _,
-        rwa [gt_iff_lt, div_lt_iff' two_pos] at hN₁,
+        rw [gt_iff_lt, div_lt_iff' two_pos] at hN₁,
+        exact le_of_lt hN₁,
       }
       ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
       ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
@@ -335,7 +335,29 @@ theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lt_of_le_of_lt (abs_abs_sub_abs_le_abs_sub (a n) la) (hN n hn),
 end
 
--- Limit of tail
+theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : is_limit a la) : is_limit ((^ n) ∘ a) (la ^ n) := begin
+  induction n with n hn,
+  { simp,
+    exact lim_of_const_seq,
+  },
+  { conv {
+      congr,
+      { change (λ k, (a k) ^ (n + 1)),
+        funext,
+        rw pow_succ,
+      },
+      { rw pow_succ }
+    },
+    exact lim_mul_eq_mul_lim hla hn,
+  }
+end
+
+theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : is_limit a la) :
+  is_limit (real.sqrt ∘ a) (real.sqrt la) :=
+begin
+  sorry,
+end
+
 lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
   intros ε hε,
   cases hla ε hε with N hN,
@@ -344,23 +366,20 @@ lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limi
   exact hN (n + k) (le_add_right hn),
 end
 
--- Some useful limits
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
-  induction k with k hk,
-  { conv {
-      congr,
-      funext,
-      rw [zero_add, pow_one]
+  have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
+    intro n,
+    norm_cast,
+    exact nat.succ_ne_zero n,
+  end,
+  conv {
+    congr,
+    { funext,
+      rw [pow_succ, ←one_div_mul_one_div, ←one_div_pow (h n)],
     },
-    exact lim_of_reciprocal,
+    { rw ←zero_mul (0 ^ k : ℝ) }
   },
-  { conv {
-      congr,
-      { funext, rw [pow_succ, ←one_div_mul_one_div] },
-      { rw ←mul_zero (0 : ℝ) }
-    },
-    exact lim_mul_eq_mul_lim lim_of_reciprocal hk,
-  }
+  refine lim_mul_eq_mul_lim (lim_of_reciprocal) (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
 
 -- Remark 3.12
@@ -428,14 +447,14 @@ theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : se
   is_limit a (real.Inf (set.range a)) :=
 begin
   let b : seq := -a,
-  have h : set.range a = (λ x, -x) '' set.range (b : seq) := begin
+  have h_simp : set.range a = (λ x, -x) '' set.range (b : seq) := begin
     rw ←neg_neg a,
     exact set.range_comp,
   end,
   conv {
     congr,
     { rw ←neg_neg a, change -b },
-    { rw h }
+    { rw h_simp }
   },
   refine lim_neg_eq_neg_lim _,
   simp,
@@ -547,12 +566,9 @@ example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is
   is_limit a 0 :=
 begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
-    split,
-    { refine lim_le_of_seq_le _ lim_of_const_seq hL,
-      intro n,
-      exact abs_nonneg _, 
-    },
-    { exact hL_lt_one },
+    refine ⟨lim_le_of_seq_le _ lim_of_const_seq hL, hL_lt_one⟩,
+    intro n,
+    exact abs_nonneg _, 
   end,
   clear hL_lt_one,
   intros ε hε,
@@ -576,18 +592,11 @@ begin
               change (1 + L) / 2 = (1 - L) / 2 + L,
               ring,
             end,
-            rw h,
-            rw ←sub_lt_iff_lt_add,
-            refine lt_of_le_of_lt (le_abs_self _) _,
-            refine hN (N + k) _,
-            norm_num,
+            rw [h, ←sub_lt_iff_lt_add],
+            exact lt_of_le_of_lt (le_abs_self _) (hN (N + k) (nat.le_add_right N k)),
           }
-          ... ≤ L' * (L' ^ k * abs (a N)) : by {
-            rw mul_le_mul_left _,
-            { exact hk },
-            { exact half_pos (lt_of_le_of_lt hL_bd.1 (lt_one_add L)) }
-          }
-          ... = L' ^ (k + 1) * abs (a N) : by { rw ←mul_assoc, refl },
+          ... ≤ L' * (L' ^ k * abs (a N)) : by { rw mul_le_mul_left hL'_bd.1, exact hk }
+          ... = L' ^ (k + 1) * abs (a N) : by rw [←mul_assoc, ←pow_succ],
     }
   end,
   cases lim_of_geom_zero hL'_bd (ε / abs (a N)) _ with M hM,
