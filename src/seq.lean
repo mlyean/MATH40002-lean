@@ -25,16 +25,11 @@ lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   intros n hn,
   rw sub_zero,
   dsimp,
-  rw abs_of_pos,
-  { refine lt_of_le_of_lt _ hN,
-    rw one_div_le_one_div _ _,
-    { norm_cast,
-      exact add_le_add_right hn 1,
-    },
-    exact nat.cast_add_one_pos n,
-    exact nat.cast_add_one_pos N,
-  },
-  { exact nat.one_div_pos_of_nat }
+  rw abs_of_pos (nat.one_div_pos_of_nat : 1 / ((n : ℝ) + 1) > 0),
+  refine lt_of_le_of_lt _ hN,
+  rw one_div_le_one_div (nat.cast_add_one_pos n : 0 < (n : ℝ) + 1) (nat.cast_add_one_pos N : 0 < (N : ℝ) + 1),
+  norm_cast,
+  exact add_le_add_right' hn,
 end
 
 -- Example 3.5
@@ -48,26 +43,23 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   have hN' : 0 < (N : ℝ) + 1 := nat.cast_add_one_pos N,
   have hn' : 0 < (n : ℝ) + 1 := nat.cast_add_one_pos n,
   rw abs_of_pos,
-  { calc
-      ((n : ℝ) + 5) / (n + 1) - 1 = (n + 5) / (n + 1) - (n + 1) / (n + 1) : by {
-          have h : 1 + (n : ℝ) ≠ 0 := by { norm_cast, norm_num },
-          field_simp [h],
-        }
-        ... = 4 / ((n : ℝ) + 1) : by ring
-        ... < 4 / ((N : ℝ) + 1) : by {
-          rw div_lt_div_left four_pos hn' hN',
-          norm_cast,
-          exact add_lt_add_right hn 1
-        }
-        ... < ε : by {
-          rw div_lt_iff'' hN' hε,
-          exact lt_trans hN (lt_add_one ↑N)
-        },
-  },
-  { rw [gt_iff_lt, sub_pos],
-    refine one_lt_div_of_lt (n + 5) hn' (add_lt_add_left _ n),
+  show ((n : ℝ) + 5) / (n + 1) - 1 > 0, by {
+    rw [gt_iff_lt, sub_pos],
+    refine one_lt_div_of_lt (n + 5) hn' _,
     norm_num,
-  }
+  },
+  calc
+    ((n : ℝ) + 5) / (n + 1) - 1 = (n + 5) / (n + 1) - (n + 1) / (n + 1) : by rw div_self (ne_of_gt hn')
+      ... = 4 / (n + 1) : by ring
+      ... < 4 / (N + 1) : by {
+        rw div_lt_div_left four_pos hn' hN',
+        norm_cast,
+        exact add_lt_add_right hn 1,
+      }
+      ... < ε : by {
+        rw div_lt_iff'' hN' hε,
+        exact lt_trans hN (lt_add_one ↑N),
+      },
 end
 
 -- Example 3.6
@@ -120,25 +112,25 @@ example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
   by_contradiction h₂,
   cases h₂ with l hl,
   cases hl δ h₁ with N hN,
-  have h₂ : N ≤ 2 * N := by { rw two_mul, exact nat.le_add_right N N },
-  have h₃ : N ≤ 2 * N + 1 := nat.le_succ_of_le h₂,
-  have h₄ : abs (δ - l) < δ := begin
-    have H : abs ((-1) ^ (2 * N) * δ - l) < δ := hN (2 * N) h₂,
+  have h_even : N ≤ 2 * N := by { rw two_mul, exact nat.le_add_right N N },
+  have h_odd : N ≤ 2 * N + 1 := nat.le_succ_of_le h_even,
+  replace h_even : abs (δ - l) < δ := begin
+    have H : abs ((-1) ^ (2 * N) * δ - l) < δ := hN (2 * N) h_even,
     rwa [neg_one_pow_eq_pow_mod_two, nat.mul_mod_right, pow_zero, one_mul] at H,
   end,
-  have h₅ : abs (δ + l) < δ := begin
-    have H : abs ((-1) ^ (2 * N + 1) * δ - l) < δ := hN (2 * N + 1) h₃,
+  replace h_odd : abs (δ + l) < δ := begin
+    have H : abs ((-1) ^ (2 * N + 1) * δ - l) < δ := hN (2 * N + 1) h_odd,
     rw [neg_one_pow_eq_pow_mod_two, add_comm, nat.add_mul_mod_self_left] at H,
     change 1 % 2 with 1 at H,
     rwa [pow_one, neg_one_mul, ←abs_neg, sub_eq_add_neg, neg_add, neg_neg, neg_neg] at H,
   end,
   refine lt_irrefl (2 * δ) _,
   calc
-    2 * δ = abs (2 * δ) : by rw abs_of_pos (mul_pos' zero_lt_two h₁)
-      ... = abs ((δ - l) + (δ + l)) : by ring
+    2 * δ = abs (2 * δ) : eq.symm (abs_of_pos (mul_pos' zero_lt_two h₁))
+      ... = abs ((δ - l) + (δ + l)) : congr_arg abs (by ring)
       ... ≤ abs (δ - l) + abs (δ + l) : abs_add (δ - l) (δ + l)
-      ... < δ + δ : add_lt_add h₄ h₅
-      ... = 2 * δ : (two_mul δ).symm
+      ... < δ + δ : add_lt_add h_even h_odd
+      ... = 2 * δ : eq.symm (two_mul δ)
 end
 
 lemma close_implies_eq (a b : ℝ) : (∀ ε > 0, abs (a - b) < ε) → a = b := begin
@@ -150,7 +142,7 @@ end
 
 -- Theorem 3.9 (Uniqueness of limits)
 theorem limit_unique {a : seq} {l₁ l₂ : ℝ} (h₁ : is_limit a l₁) (h₂ : is_limit a l₂) : l₁ = l₂ := begin
-  apply close_implies_eq l₁ l₂,
+  refine close_implies_eq l₁ l₂ _,
   intros ε hε,
   cases h₁ (ε / 2) (half_pos hε) with N₁ hN₁,
   cases h₂ (ε / 2) (half_pos hε) with N₂ hN₂,
@@ -169,28 +161,25 @@ lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
   intro ha,
   cases ha with l hl,
   cases hl 1 zero_lt_one with N hN,
-  let head : finset ℝ := (finset.range (N + 1)).image (λ n, abs (a n)),
+  let head : finset ℝ := (finset.range (N + 1)).image (abs ∘ a),
   have head_has_mem : abs (a 0) ∈ head := begin
-    rw finset.mem_image,
-    existsi 0,
-    simp,
+    refine finset.mem_image_of_mem (abs ∘ a) _,
+    rw finset.mem_range,
+    exact nat.succ_pos N,
   end,
   cases finset.max_of_mem head_has_mem with B hB,
   let M := max B (abs l + 1),
-  have hM : M > 0 :=
-    calc
-      M ≥ abs l + 1 : le_max_right B (abs l + 1)
-        ... ≥ 0 + 1 : add_le_add_right (abs_nonneg l) 1
-        ... = 1 : zero_add 1
-        ... > 0 : zero_lt_one,
-  existsi M,
-  existsi hM,
+  have hM : M > 0 := begin
+    refine lt_of_lt_of_le zero_lt_one (le_max_right_of_le _),
+    rw le_add_iff_nonneg_left,
+    exact abs_nonneg l,
+  end,
+  existsi [M, hM],
   intro n,
   cases le_or_gt n N with h h,
   { refine le_trans (finset.le_max_of_mem _ hB) (le_max_left B (abs l + 1)),
-    rw finset.mem_image,
-    existsi n,
-    simp,
+    refine finset.mem_image_of_mem (abs ∘ a) _,
+    rw finset.mem_range,
     exact nat.lt_succ_of_le h,
   },
   { have h' : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n (le_of_lt h)),
@@ -647,26 +636,23 @@ lemma bdd_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   replace hN := hN N (le_refl N),
   let head : finset ℝ := (finset.range (N + 1)).image (abs ∘ a),
   have head_has_mem : abs (a 0) ∈ head := begin
-    rw finset.mem_image,
-    existsi 0,
-    simp,
+    refine finset.mem_image_of_mem (abs ∘ a) _,
+    rw finset.mem_range,
+    exact nat.succ_pos N,
   end,
   cases finset.max_of_mem head_has_mem with B hB,
   let M := max B (abs (a N) + 1),
-  have hM : M > 0 :=
-    calc
-      M ≥ abs (a N) + 1 : le_max_right B (abs (a N) + 1)
-        ... ≥ 0 + 1 : add_le_add_right (abs_nonneg (a N)) 1
-        ... = 1 : zero_add 1
-        ... > 0 : zero_lt_one,
-  existsi M,
-  existsi hM,
+  have hM : M > 0 := begin
+    refine lt_of_lt_of_le zero_lt_one (le_max_right_of_le _),
+    rw le_add_iff_nonneg_left,
+    exact abs_nonneg (a N),
+  end,
+  existsi [M, hM],
   intro n,
   cases le_or_gt n N with h h,
   { refine le_trans (finset.le_max_of_mem _ hB) (le_max_left B (abs (a N) + 1)),
-    rw finset.mem_image,
-    existsi n,
-    simp,
+    refine finset.mem_image_of_mem (abs ∘ a) _,
+    rw finset.mem_range,
     exact nat.lt_succ_of_le h,
   },
   { have h' : abs (a n) - abs (a N) < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) (a N)) (hN n (le_of_lt h)),
@@ -773,8 +759,10 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     change A ≤ real.Sup (set.range (a ∘ (+ k))),
     refine le_trans (hA (set.mem_range_self k)) _,
     refine real.le_Sup (set.range (a ∘ (+ k))) (bdd_above_of_tail k ha_bdd_above) _,
+    rw set.range_comp,
+    refine set.mem_image_of_mem a _,
     existsi 0,
-    simp,
+    exact zero_add k,
   end,
   have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
   set lb := real.Inf (set.range b),
@@ -845,7 +833,9 @@ example (n : ℕ → ℕ) (hn : strict_mono n) : ∀ i, n i ≥ i := begin
 end
 
 -- Theorem 3.26 (Bolzano-Weierstrass theorem)
-theorem exists_convergent_subseq_of_bdd {a : seq} (ha : seq_bdd a) : ∃ (n : ℕ → ℕ), seq_converges (a ∘ n) := begin
+theorem exists_convergent_subseq_of_bdd {a : seq} (ha : seq_bdd a) :
+  ∃ (n : ℕ → ℕ) (hn : strict_mono n), seq_converges (a ∘ n) :=
+begin
   sorry,
 end
 
