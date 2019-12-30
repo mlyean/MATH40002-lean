@@ -346,12 +346,6 @@ theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : is_limit a la) 
   }
 end
 
-theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : is_limit a la) :
-  is_limit (real.sqrt ∘ a) (real.sqrt la) :=
-begin
-  sorry,
-end
-
 lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
   intros ε hε,
   cases hla ε hε with N hN,
@@ -469,11 +463,44 @@ begin
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
   replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
-  simp at hN,
-  rw neg_lt_zero at hN,
+  rw [←sub_pos, sub_neg_eq_add, add_eq_of_eq_sub' rfl] at hN,
   change 0 < a N - b N at hN,
   rw sub_pos at hN,
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
+end
+
+theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : is_limit a la) :
+  is_limit (real.sqrt ∘ a) (real.sqrt la) :=
+begin
+  have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha lim_of_const_seq hla,
+  cases lt_or_eq_of_le hla_nonneg with h h,
+  { intros ε hε,
+    cases hla (ε * (real.sqrt la)) (mul_pos hε (real.sqrt_pos.mpr h)) with N hN,
+    existsi N,
+    intros n hn,
+    replace hN := hN n hn,
+    have h : real.sqrt (a n) + real.sqrt la ≥ 0 := add_nonneg (real.sqrt_nonneg (a n)) (real.sqrt_nonneg la),
+    refine lt_of_mul_lt_mul_right _ h,
+    rw [←abs_of_nonneg h, ←abs_mul],
+    calc
+      abs (((real.sqrt ∘ a) n - real.sqrt la) * (real.sqrt (a n) + real.sqrt la)) = abs ((real.sqrt (a n)) ^ 2 - (real.sqrt la) ^ 2) : congr_arg abs (by ring)
+        ... = abs (a n - la) : by rw [real.sqr_sqrt (ha n), real.sqr_sqrt hla_nonneg]
+        ... < ε * real.sqrt la : hN
+        ... ≤ ε * (real.sqrt (a n) + real.sqrt la) : by {
+          refine mul_le_mul_of_nonneg_left _ (le_of_lt hε),
+          exact le_add_of_nonneg_left (real.sqrt_nonneg (a n)),
+        }
+        ... = ε * abs (real.sqrt (a n) + real.sqrt la) : by rw abs_of_nonneg h,
+  },
+  { intros ε hε,
+    cases hla (ε ^ 2) (pow_pos hε 2) with N hN,
+    existsi N,
+    intros n hn,
+    replace hN := hN n hn,
+    rw [←h, sub_zero, abs_of_nonneg (ha n)] at hN,
+    rw [←h, real.sqrt_zero, sub_zero, abs_of_nonneg (real.sqrt_nonneg (a n)), ←real.sqrt_sqr (le_of_lt hε)],
+    rwa real.sqrt_lt (ha n) (le_of_lt (pow_pos hε 2)),
+  }
 end
 
 -- Problem Sheet 5: Question 1
@@ -512,10 +539,7 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_l
     exact one_lt_one_div hr_pos hr_lt_one,
   end,
   have hx : ∀ (n : ℕ), r ^ n = 1 / (1 + x) ^ n := begin
-    have h : r = 1 / (1 + x) := begin
-      dsimp only [x],
-      field_simp,
-    end,
+    have h : r = 1 / (1 + x) := by { dsimp only [x], field_simp },
     intro n,
     rw h,
     refine one_div_pow _ n,
@@ -580,7 +604,7 @@ begin
             rw [h, ←sub_lt_iff_lt_add],
             exact lt_of_le_of_lt (le_abs_self _) (hN (N + k) (nat.le_add_right N k)),
           }
-          ... ≤ L' * (L' ^ k * abs (a N)) : by { rw mul_le_mul_left hL'_bd.1, exact hk }
+          ... ≤ L' * (L' ^ k * abs (a N)) : by rwa mul_le_mul_left hL'_bd.1
           ... = L' ^ (k + 1) * abs (a N) : by rw [←mul_assoc, ←pow_succ],
     }
   end,
