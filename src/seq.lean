@@ -67,32 +67,29 @@ example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
   existsi N,
   intros n hn,
   have hn_gt_4 : (n : ℝ) > 4 := calc
-    (n : ℝ) ≥ N : by { norm_cast, exact hn }
+    (n : ℝ) ≥ N : nat.cast_le.mpr hn
       ... > max 4 (8 / ε) : hN
       ... ≥ 4 : le_max_left 4 (8 / ε),
   have hn_gt_2 : (n : ℝ) > 2 := lt_trans (by norm_num) hn_gt_4,
   have hn_pos : (n : ℝ) > 0 := lt_trans four_pos hn_gt_4,
+  have hn_sub_2_pos := sub_pos.mpr hn_gt_2,
   change abs (((n : ℝ) + 2) / (n - 2) - 1) < ε,
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
-        have hn' : (n : ℝ) - 2 ≠ 0 := sub_ne_zero.mpr (ne_of_gt hn_gt_2),
         refine congr_arg abs _,
         conv_lhs {
           congr,
           skip,
-          rw ←div_self hn'
+          rw ←div_self (ne_of_gt hn_sub_2_pos)
         },
-        field_simp [hn],
-        ring
+        rw ←sub_div,
+        norm_num,
       }
-      ... = 4 / ((n : ℝ) - 2) : by {
-        refine abs_of_pos (div_pos four_pos _),
-        rw sub_pos,
-        exact hn_gt_2
-      }
+      ... = 4 / ((n : ℝ) - 2) : abs_of_pos (div_pos four_pos hn_sub_2_pos)
       ... < 4 / ((n : ℝ) / 2) : by {
-        rw div_lt_div_left,
-        all_goals { linarith [hn_gt_4] }
+        rw [div_lt_div_left four_pos hn_sub_2_pos (half_pos hn_pos), lt_sub, sub_half, lt_div_iff two_pos],
+        norm_num,
+        exact hn_gt_4,
       }
       ... = 8 / (n : ℝ) : by { rw div_div_eq_mul_div, ring }
       ... < ε : by {
@@ -296,7 +293,7 @@ begin
       }
       ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
       ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
-      ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos (by norm_num) (mul_pos hlb' hlb'))
+      ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos two_pos (mul_pos hlb' hlb'))
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
@@ -413,9 +410,9 @@ begin
     cases ha' with b hb,
     exact real.is_lub_Sup (set.mem_range_self 0) hb,
   end,
-  have h' : l - ε < l := by linarith only [hε],
+  have h' : l - ε < l := sub_lt_self l hε,
   rcases (lt_is_lub_iff h).1 h' with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
-  clear h,
+  clear h h',
   subst hx,
   existsi N,
   intros n hn,
@@ -434,15 +431,9 @@ theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : se
   is_limit a (real.Inf (set.range a)) :=
 begin
   let b : seq := -a,
-  have h_simp : set.range a = (λ x, -x) '' set.range (b : seq) := begin
-    rw ←neg_neg a,
-    exact set.range_comp,
-  end,
-  conv {
-    congr,
-    { rw ←neg_neg a, change -b },
-    { rw h_simp }
-  },
+  rw ←neg_neg a,
+  change is_limit (-b) (real.Inf (set.range ((λ x, -x) ∘ b))),
+  rw set.range_comp,
   refine lim_neg_eq_neg_lim _,
   simp,
   refine lim_of_bounded_increasing_seq ha _,
@@ -483,7 +474,7 @@ begin
     refine lt_of_mul_lt_mul_right _ h,
     rw [←abs_of_nonneg h, ←abs_mul],
     calc
-      abs (((real.sqrt ∘ a) n - real.sqrt la) * (real.sqrt (a n) + real.sqrt la)) = abs ((real.sqrt (a n)) ^ 2 - (real.sqrt la) ^ 2) : congr_arg abs (by ring)
+      abs ((real.sqrt (a n) - real.sqrt la) * (real.sqrt (a n) + real.sqrt la)) = abs ((real.sqrt (a n)) ^ 2 - (real.sqrt la) ^ 2) : congr_arg abs (by ring)
         ... = abs (a n - la) : by rw [real.sqr_sqrt (ha n), real.sqr_sqrt hla_nonneg]
         ... < ε * real.sqrt la : hN
         ... ≤ ε * (real.sqrt (a n) + real.sqrt la) : by {
@@ -506,7 +497,9 @@ end
 -- Problem Sheet 5: Question 1
 lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1 + n * x := begin
   induction n with n hn,
-  { rw [pow_zero, nat.cast_zero, zero_mul, add_zero], exact le_refl 1, },
+  { rw [pow_zero, nat.cast_zero, zero_mul, add_zero],
+    exact le_refl 1,
+  },
   { have hx' : 1 + x > 0 := by rwa [gt_iff_lt, ←sub_pos, sub_neg_eq_add, add_comm] at hx,
     calc
     (1 + x) ^ (n + 1) = (1 + x) * (1 + x) ^ n : by rw pow_succ
@@ -567,7 +560,7 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
   intros n hn,
   calc
     r ^ n = (1 + x) ^ n : congr_fun (congr_arg pow hx) n
-      ... ≥ 1 + n * x : bernoulli_inequality (lt_trans (by norm_num) hx')
+      ... ≥ 1 + n * x : bernoulli_inequality (lt_trans zero_gt_neg_one hx')
       ... > n * x : lt_one_add (n * x)
       ... ≥ N * x : by { rw [ge_iff_le, mul_le_mul_right hx'], exact nat.cast_le.mpr hn }
       ... > M : (div_lt_iff hx').mp hN,
@@ -590,7 +583,11 @@ begin
   have hL'_bd : L' ∈ set.Ioo (0 : ℝ) (1 : ℝ) := begin
     dsimp only [L'],
     split,
-    all_goals { linarith only [hL_bd.1, hL_bd.2] },
+    { exact half_pos (lt_of_le_of_lt hL_bd.1 (lt_one_add L)) },
+    { rw [div_lt_iff two_pos, one_mul, ←lt_sub_iff_add_lt'],
+      norm_num,
+      exact hL_bd.2,
+    },
   end,
   have hL' : ∀ k, abs (a (N + k)) ≤ L' ^ k * abs (a N) := begin
     intro k,
