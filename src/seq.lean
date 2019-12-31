@@ -846,7 +846,33 @@ end
 theorem exists_convergent_subseq_of_bdd {a : seq} (ha : seq_bdd a) :
   ∃ (n : ℕ → ℕ) (hn : strict_mono n), seq_converges (a ∘ n) :=
 begin
-  sorry,
+  let is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j,
+  have h_not_peak_point : ∀ j, ¬ is_peak_point j ↔ ∃ k > j, a k ≥ a j := by { push_neg, simp },
+  let peak_points : set ℕ := is_peak_point,
+  cases em (set.finite peak_points) with hfin hnfin,
+  { let m := option.iget (nat.succ <$> hfin.to_finset.max),
+    have hm : ∀ j ≥ m, ¬ is_peak_point j := begin
+      intros j hj,
+      by_contradiction hj',
+      change j ∈ peak_points at hj',
+      cases h : finset.max hfin.to_finset with x,
+      { rw finset.max_eq_none at h,
+        replace hj' : j ∈ set.finite.to_finset hfin := set.finite.mem_to_finset.mpr hj',
+        rw h at hj',
+        exact finset.not_mem_empty j hj',
+      },
+      { have hm_aux : m = option.iget (nat.succ <$> hfin.to_finset.max) := rfl,
+        rw [h, option.map_some, option.iget_some] at hm_aux,
+        rw hm_aux at hj,
+        rw [ge_iff_le, nat.succ_le_iff] at hj,
+        replace hj' : j ≤ x := finset.le_max_of_mem (set.finite.mem_to_finset.mpr hj') h,
+        refine lt_irrefl x (lt_of_lt_of_le hj hj'),
+      }
+    end,
+    sorry,
+  },
+  { sorry,
+  },
 end
 
 end sec_3_3
