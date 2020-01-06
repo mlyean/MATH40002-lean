@@ -54,10 +54,7 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
         norm_cast,
         exact add_lt_add_right hn 1,
       }
-      ... < ε : by {
-        rw div_lt_iff'' hN' hε,
-        exact lt_trans hN (lt_add_one ↑N),
-      },
+      ... < ε : (div_lt_iff'' hN' hε).mpr (lt_trans hN (lt_add_one N)),
 end
 
 -- Example 3.6
@@ -411,7 +408,7 @@ begin
     exact real.is_lub_Sup (set.mem_range_self 0) hb,
   end,
   have h' : l - ε < l := sub_lt_self l hε,
-  rcases (lt_is_lub_iff h).1 h' with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
+  rcases (lt_is_lub_iff h).mp h' with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
   clear h h',
   subst hx,
   existsi N,
@@ -578,7 +575,7 @@ begin
   clear hL_lt_one,
   intros ε hε,
   cases hL ((1 - L) / 2) _ with N hN,
-  show (1 - L) / 2 > 0, from half_pos (sub_pos.2 hL_bd.2),
+  show (1 - L) / 2 > 0, from half_pos (sub_pos.mpr hL_bd.2),
   set L' := (1 + L) / 2,
   have hL'_bd : L' ∈ set.Ioo (0 : ℝ) (1 : ℝ) := begin
     dsimp only [L'],
@@ -796,13 +793,13 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     rintros x ⟨k, hk⟩,
     subst hk,
     refine le_of_lt _,
-    have h := (abs_lt.1 (hN n hn (k + N) (nat.le_add_left N k))).2,
+    have h := (abs_lt.mp (hN n hn (k + N) (nat.le_add_left N k))).right,
     rwa sub_lt_iff_lt_add' at h,
   },
   { rw sub_le,
     have h : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
     rw h,
-    refine (real.le_Inf (set.range (b ∘ (+ N))) _ _).2 _,
+    refine (real.le_Inf (set.range (b ∘ (+ N))) _ _).mpr _,
     show ∃ x, x ∈ set.range (b ∘ (+ N)), from set.exists_mem_of_ne_empty (set.range_ne_empty (b ∘ (+ N))),
     show seq_bdd_below (b ∘ (+ N)), from bdd_below_of_tail N hb_bdd_below,
     rintros x ⟨k, hk⟩,
@@ -810,7 +807,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     subst hk,
     dsimp only [b],
     refine le_trans (le_of_lt _) _,
-    show a n - ε / 2 < a (k + N), from sub_lt.2 (abs_lt.1 (hN (k + N) (nat.le_add_left N k) n hn)).2,
+    show a n - ε / 2 < a (k + N), from sub_lt.mpr (abs_lt.mp (hN (k + N) (nat.le_add_left N k) n hn)).right,
     refine real.le_Sup (set.range (a ∘ (+ (k + N)))) (bdd_above_of_tail (k + N) ha_bdd_above) _,
     rw set.range_comp,
     refine set.mem_image_of_mem a _,
@@ -843,15 +840,25 @@ example (n : ℕ → ℕ) (hn : strict_mono n) : ∀ i, n i ≥ i := begin
 end
 
 -- Theorem 3.26 (Bolzano-Weierstrass theorem)
-theorem exists_convergent_subseq_of_bdd {a : seq} (ha : seq_bdd a) :
+section thm_3_26
+
+parameter (a : seq)
+
+def is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j
+
+lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j := begin
+  unfold is_peak_point,
+  push_neg,
+  simp,
+end
+
+theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
   ∃ (n : ℕ → ℕ) (hn : strict_mono n), seq_converges (a ∘ n) :=
 begin
-  let is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j,
-  have h_not_peak_point : ∀ j, ¬ is_peak_point j ↔ ∃ k > j, a k ≥ a j := by { push_neg, simp },
-  let peak_points : set ℕ := is_peak_point,
+  let peak_points : set ℕ := is_peak_point a,
   cases em (set.finite peak_points) with hfin hnfin,
-  { let m := option.iget (nat.succ <$> hfin.to_finset.max),
-    have hm : ∀ j ≥ m, ¬ is_peak_point j := begin
+  { let m := option.iget hfin.to_finset.max,
+    have hm : ∀ j > m, ¬is_peak_point a j := begin
       intros j hj,
       by_contradiction hj',
       change j ∈ peak_points at hj',
@@ -861,19 +868,26 @@ begin
         rw h at hj',
         exact finset.not_mem_empty j hj',
       },
-      { have hm_aux : m = option.iget (nat.succ <$> hfin.to_finset.max) := rfl,
-        rw [h, option.map_some, option.iget_some] at hm_aux,
+      { have hm_aux : m = option.iget hfin.to_finset.max := rfl,
+        rw [h, option.iget_some] at hm_aux,
         rw hm_aux at hj,
-        rw [ge_iff_le, nat.succ_le_iff] at hj,
         replace hj' : j ≤ x := finset.le_max_of_mem (set.finite.mem_to_finset.mpr hj') h,
-        refine lt_irrefl x (lt_of_lt_of_le hj hj'),
+        exact lt_irrefl x (lt_of_lt_of_le hj hj'),
       }
+    end,
+    replace hm : ∀ j > m, ∃ k > j, a k ≥ a j := begin
+      intros j hj,
+      rw ←not_peak_point,
+      exact hm j hj,
     end,
     sorry,
   },
-  { sorry,
+  { change set.infinite peak_points at hnfin,
+    sorry,
   },
 end
+
+end thm_3_26
 
 end sec_3_3
 
