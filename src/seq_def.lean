@@ -91,11 +91,7 @@ def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ N, ∀ n ≥ N, abs ((a n) -
 -- Convergence
 def seq_converges (a : seq) := ∃ (l : ℝ), is_limit a l
 
-lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_converges a := begin
-  intro H,
-  existsi l,
-  exact H,
-end
+lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_converges a := Exists.intro l
 
 -- Divergence
 def seq_diverges (a : seq) := ¬ seq_converges a
