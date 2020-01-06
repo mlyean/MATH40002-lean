@@ -340,12 +340,24 @@ theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : is_limit a la) 
   }
 end
 
-lemma lim_of_tail {a : seq} {la : ℝ} (k : ℕ) (hla : is_limit a la) : is_limit (a ∘ (+ k)) la := begin
-  intros ε hε,
-  cases hla ε hε with N hN,
-  existsi N,
-  intros n hn,
-  exact hN (n + k) (le_add_right hn),
+lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_limit (a ∘ (+ k)) la := begin
+  split,
+  { intros hla ε hε,
+    cases hla ε hε with N hN,
+    existsi N,
+    intros n hn,
+    exact hN (n + k) (le_add_right hn),
+  },
+  { intros hla ε hε,
+    cases hla ε hε with N hN,
+    existsi N + k,
+    intros n hn,
+    cases nat.le.dest hn with m hm,
+    rw add_right_comm at hm,
+    replace hN := hN (N + m) (nat.le_add_right N m),
+    change abs (a (N + m + k) - la) < ε at hN,
+    rwa hm at hN,
+  },
 end
 
 lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
@@ -362,6 +374,26 @@ lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))
     { rw ←zero_mul (0 ^ k : ℝ) }
   },
   refine lim_mul_eq_mul_lim (lim_of_reciprocal) (lim_pow_eq_pow_lim lim_of_reciprocal),
+end
+
+lemma lim_abs_eq_zero_iff {a : seq} : is_limit (abs ∘ a) 0 ↔ is_limit a 0 := begin
+  split,
+  { intros hla ε hε,
+    cases hla ε hε with N hN,
+    existsi N,
+    intros n hn,
+    rw sub_zero,
+    replace hN := hN n hn,
+    rwa [sub_zero, abs_abs] at hN,
+  },
+  { intros hla ε hε,
+    cases hla ε hε with N hN,
+    existsi N,
+    intros n hn,
+    rw [sub_zero, abs_abs],
+    replace hN := hN n hn,
+    rwa sub_zero at hN,
+  }
 end
 
 -- Remark 3.12
@@ -544,6 +576,34 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_l
     }
   },
   exact lim_of_geom_zero_aux hx_pos,
+end
+
+lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
+  cases decidable.em (r = 0) with h h,
+  { rw lim_eq_lim_of_tail 1,
+    change is_limit (λ n, r ^ (n + 1)) 0,
+    conv {
+      congr,
+      { funext,
+        rw [h, zero_pow (nat.succ_pos n)],
+      }
+    },
+    exact lim_of_const_seq,
+  },
+  { replace h := abs_pos_of_ne_zero h,
+    simp at hr,
+    rw ←abs_lt at hr,
+    have hr' : abs r ∈ set.Ioo (0 : ℝ) (1 : ℝ) := ⟨h, hr⟩,
+    rw ←lim_abs_eq_zero_iff,
+    conv {
+      congr,
+      { change λ (n : ℕ), abs (r ^ n),
+        funext,
+        rw ←pow_abs,
+      }
+    },
+    exact lim_of_geom_zero hr',
+  }
 end
 
 lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
@@ -832,7 +892,7 @@ end sec_3_2
 section sec_3_3
 
 -- Exercise 3.24
-example (n : ℕ → ℕ) (hn : strict_mono n) : ∀ i, n i ≥ i := begin
+lemma nat.ge_index_of_strict_mono {n : ℕ → ℕ} (hn : strict_mono n) : ∀ i, n i ≥ i := begin
   intro i,
   induction i with i hi,
   { exact nat.zero_le (n 0) },
@@ -888,6 +948,17 @@ begin
 end
 
 end thm_3_26
+
+-- Proposition 3.28
+lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : is_limit a l) : is_limit b l := begin
+  rcases h with ⟨n, ⟨hn, hb⟩⟩,
+  subst hb,
+  intros ε hε,
+  cases hl ε hε with N hN,
+  existsi N,
+  intros k hk,
+  refine hN (n k) (le_trans hk (nat.ge_index_of_strict_mono hn k)),
+end
 
 end sec_3_3
 
