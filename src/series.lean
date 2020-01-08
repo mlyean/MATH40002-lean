@@ -28,11 +28,8 @@ lemma sum_of_geom_series (x : ℝ) (hx : abs x < 1) : is_limit (geom_series x) (
   exact lim_of_geom_zero' (abs_lt.mp hx),
 end
 
-lemma partial_sum_succ_sub (a : seq) (n : ℕ) : partial_sum a (n + 1) - partial_sum a n = a n := begin
-  unfold partial_sum,
-  rw finset.sum_Ico_succ_top (nat.zero_le n),
-  exact add_sub_cancel' (partial_sum a n) (a n),
-end
+lemma partial_sum_succ_sub (a : seq) (n : ℕ) : partial_sum a (n + 1) - partial_sum a n = a n := 
+  sub_eq_iff_eq_add'.mpr partial_sum_succ
 
 -- Theorem 4.2 (Limit test)
 theorem lim_of_terms_eq_zero (a : seq) (ha : sum_to_inf_converges a) : is_limit a 0 := begin
@@ -101,7 +98,7 @@ lemma harmonic_series_monotone : monotone (partial_sum (λ n, 1 / ((n : ℝ) + 1
 end
 
 -- Example 4.4
-theorem harmonic_series_diverges : sum_to_inf_diverges_to_pos_inf (λ n, 1 / ((n : ℝ) + 1)) := begin
+theorem harmonic_series_diverges : sum_to_inf_diverges_to_pos_inf (λ n, 1 / (n + 1)) := begin
   intros M hM,
   cases exists_nat_gt (2 * M) with M' hM',
   existsi 2 ^ (M' + 1),
@@ -109,7 +106,42 @@ theorem harmonic_series_diverges : sum_to_inf_diverges_to_pos_inf (λ n, 1 / ((n
   calc
     partial_sum (λ (n : ℕ), 1 / (↑n + 1)) n ≥ partial_sum (λ (n : ℕ), 1 / (↑n + 1)) (2 ^ (M' + 1)) : harmonic_series_monotone hn
       ... ≥ 1 + (M' + 1) / 2 : harmonic_series_ineq (M' + 1)
-      ... > M : by linarith only [hM'],
+      ... > (M' + 1) / 2 : lt_one_add (((M' : ℝ) + 1) / 2)
+      ... > M : by { rw [gt_iff_lt, lt_div_iff' two_pos], exact lt_trans hM' (lt_add_one M'), }
+end
+
+-- Example 4.5
+example : sum_to_inf_converges (λ n, 1 / ((n + 1) * (n + 2))) := begin
+  unfold sum_to_inf_converges,
+  have h : partial_sum (λ n, 1 / ((n + 1) * (n + 2))) = λ n, 1 - 1 / (n + 1) := begin
+    funext,
+    induction n with n hn,
+    { unfold partial_sum,
+      simp, },
+    { rw [partial_sum_succ, hn, sub_add, sub_left_inj, nat.succ_eq_add_one, nat.cast_add, nat.cast_one],
+      have h : (n : ℝ) + 1 ≠ 0 := sorry,
+      have h' : (n : ℝ) + 2 ≠ 0 := sorry,
+      rw [←div_mul_left ((n : ℝ) + 1) h', ←sub_div],
+      conv_lhs {
+        congr,
+        { change (n : ℝ) + 2 + -1,
+          rw add_assoc,
+          congr,
+          skip,
+          change (1 + 1 : ℝ) - 1,
+          rw add_sub_cancel (1 : ℝ) 1,
+        }
+      },
+      rw [div_mul_right ((n : ℝ) + 2) h, add_assoc],
+      refl,
+    }
+  end,
+  rw h,
+  exact seq_converges_of_has_limit (lim_sub_eq_sub_lim lim_of_const_seq lim_of_reciprocal),
+end
+
+example : sum_to_inf_converges (λ n, 1 / (n + 1) ^ 2) := begin
+  sorry,
 end
 
 end sec_4_1
