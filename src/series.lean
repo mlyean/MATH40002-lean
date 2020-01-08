@@ -42,6 +42,8 @@ theorem lim_of_terms_eq_zero (a : seq) (ha : sum_to_inf_converges a) : is_limit 
   exact lim_sub_eq_sub_lim ((lim_eq_lim_of_tail 1).mp hl) hl,
 end
 
+#check finset.Ico.mem
+
 lemma harmonic_series_ineq (k : ℕ) : (partial_sum (λ n, 1 / (n + 1)) (2 ^ k)) ≥ 1 + k / 2 := begin
   unfold partial_sum,
   induction k with k hk,
@@ -52,12 +54,11 @@ lemma harmonic_series_ineq (k : ℕ) : (partial_sum (λ n, 1 / (n + 1)) (2 ^ k))
     show 2 ^ k ≤ 2 ^ (k + 1), from nat.le_add_left (2 ^ k) _,
     rw [nat.cast_add, nat.cast_one, add_div, ←add_assoc],
     refine add_le_add hk _,
-    have h : (2 ^ k : ℝ) ≠ 0 := by { norm_num, exact (ne_of_lt (pow_pos zero_lt_two k)).symm, },
+    have h : (2 ^ k : ℝ) ≠ 0 := (ne_of_lt (pow_pos zero_lt_two k)).symm,
     calc
       1 / 2 = 2 ^ k * (1 / 2 ^ (k + 1)) : by rw [←div_mul_left 2 h, ←pow_succ, div_eq_mul_one_div (2 ^ k : ℝ) (2 ^ (k + 1) : ℝ)]
         ... = (finset.Ico (2 ^ k) (2 ^ (k + 1))).sum (λ (n : ℕ), (1 : ℝ) / (2 ^ (k + 1))) : by {
-          rw finset.sum_const _,
-          rw finset.Ico.card,
+          rw [finset.sum_const _, finset.Ico.card],
           conv_rhs {
             congr,
             { rw [nat.pow_succ, mul_two, nat.add_sub_cancel] }
@@ -68,10 +69,10 @@ lemma harmonic_series_ineq (k : ℕ) : (partial_sum (λ n, 1 / (n + 1)) (2 ^ k))
         ... ≤ (finset.Ico (2 ^ k) (2 ^ (k + 1))).sum (λ (n : ℕ), (1 : ℝ) / (n + 1)) : by {
           refine finset.sum_le_sum _,
           intros x hx,
-          simp at hx,
+          rw finset.Ico.mem at hx,
           rw one_div_le_one_div,
           show (0 : ℝ) < 2 ^ (k + 1), from pow_pos zero_lt_two (k + 1),
-          show 0 < (x : ℝ) + 1, by { norm_cast, exact nat.succ_pos x },
+          show 0 < (x : ℝ) + 1, from nat.cast_add_one_pos x,
           norm_cast,
           exact hx.2,
         },
@@ -83,8 +84,7 @@ lemma sum_monotone_of_nonneg_terms {a : seq} (ha : ∀ n, a n ≥ 0) : monotone 
   induction hmn with n hn ih,
   { exact le_refl (partial_sum a m) },
   { refine le_trans ih _,
-    rw ←sub_nonneg,
-    rw partial_sum_succ_sub,
+    rw [←sub_nonneg, partial_sum_succ_sub],
     exact ha n,
   }
 end
@@ -92,9 +92,7 @@ end
 lemma harmonic_series_monotone : monotone (partial_sum (λ n, 1 / ((n : ℝ) + 1))) := begin
   refine sum_monotone_of_nonneg_terms _,
   intro n,
-  norm_num,
-  norm_cast,
-  exact nat.zero_le (1 + n),
+  exact le_of_lt nat.one_div_pos_of_nat,
 end
 
 -- Example 4.4
@@ -119,9 +117,12 @@ example : sum_to_inf_converges (λ n, 1 / ((n + 1) * (n + 2))) := begin
     { unfold partial_sum,
       simp, },
     { rw [partial_sum_succ, hn, sub_add, sub_left_inj, nat.succ_eq_add_one, nat.cast_add, nat.cast_one],
-      have h : (n : ℝ) + 1 ≠ 0 := sorry,
-      have h' : (n : ℝ) + 2 ≠ 0 := sorry,
-      rw [←div_mul_left ((n : ℝ) + 1) h', ←sub_div],
+      have hn2 : (n : ℝ) + 2 ≠ 0 := begin
+        refine ne_of_gt _,
+        norm_cast,
+        norm_num,
+      end,
+      rw [←div_mul_left ((n : ℝ) + 1) hn2, ←sub_div],
       conv_lhs {
         congr,
         { change (n : ℝ) + 2 + -1,
@@ -132,7 +133,12 @@ example : sum_to_inf_converges (λ n, 1 / ((n + 1) * (n + 2))) := begin
           rw add_sub_cancel (1 : ℝ) 1,
         }
       },
-      rw [div_mul_right ((n : ℝ) + 2) h, add_assoc],
+      have hn1 : (n : ℝ) + 1 ≠ 0 := begin
+        refine ne_of_gt _,
+        norm_cast,
+        norm_num,
+      end,
+      rw [div_mul_right ((n : ℝ) + 2) hn1, add_assoc],
       refl,
     }
   end,
@@ -141,7 +147,13 @@ example : sum_to_inf_converges (λ n, 1 / ((n + 1) * (n + 2))) := begin
 end
 
 example : sum_to_inf_converges (λ n, 1 / (n + 1) ^ 2) := begin
-  sorry,
+  unfold sum_to_inf_converges,
+  refine seq_converges_of_has_limit (lim_of_bounded_increasing_seq (sum_monotone_of_nonneg_terms _) _),
+  { intro n,
+    exact le_of_lt (one_div_pos_of_pos (pow_pos (nat.cast_add_one_pos n) 2)),
+  },
+  { sorry,
+  }
 end
 
 end sec_4_1
