@@ -1,21 +1,23 @@
 import seq_def
+import lemmas
 import data.set.intervals.basic
 
 namespace MATH40002
 
 open real_seq
-open classical
-
-local attribute [instance] classical.prop_decidable
-
--- Some useful lemmas
-lemma div_lt_iff'' {a b c : ℝ} (hb : b > 0) (hc : c > 0) : a / b < c ↔ a / c < b :=
-  by rw [div_lt_iff hb, div_lt_iff' hc]
 
 -- Chapter 3 : Sequences
 
 -- Section 3.1 : Convergence of Sequences
 section sec_3_1
+
+lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
+  intros ε hε,
+  existsi 0,
+  intros n Hn,
+  unfold const_seq,
+  rwa [sub_self, abs_zero],
+end
 
 -- Example 3.4
 lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
@@ -122,7 +124,7 @@ example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
       ... = abs ((δ - l) + (δ + l)) : congr_arg abs (by ring)
       ... ≤ abs (δ - l) + abs (δ + l) : abs_add (δ - l) (δ + l)
       ... < δ + δ : add_lt_add h_even h_odd
-      ... = 2 * δ : eq.symm (two_mul δ)
+      ... = 2 * δ : eq.symm (two_mul δ),
 end
 
 lemma close_implies_eq (a b : ℝ) : (∀ ε > 0, abs (a - b) < ε) → a = b := begin
@@ -181,6 +183,8 @@ lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
 end
 
 -- Theorem 3.11 (Algebra of limits)
+section algebra_of_limits
+
 theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
   is_limit (a + b) (la + lb) :=
 begin
@@ -294,15 +298,6 @@ begin
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
--- Additional stuff related to algebra of limits
-lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
-  intros ε hε,
-  existsi 0,
-  intros n Hn,
-  unfold const_seq,
-  rwa [sub_self, abs_zero],
-end
-
 theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (-a) (-la) := begin
   conv {
     congr,
@@ -340,6 +335,24 @@ theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : is_limit a la) 
   }
 end
 
+end algebra_of_limits
+
+lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
+  have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
+    intro n,
+    norm_cast,
+    exact nat.succ_ne_zero n,
+  end,
+  conv {
+    congr,
+    { funext,
+      rw [pow_succ, ←one_div_mul_one_div, ←one_div_pow (h n)],
+    },
+    { rw ←zero_mul (0 ^ k : ℝ) }
+  },
+  refine lim_mul_eq_mul_lim (lim_of_reciprocal) (lim_pow_eq_pow_lim lim_of_reciprocal),
+end
+
 lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_limit (a ∘ (+ k)) la := begin
   split,
   { intros hla ε hε,
@@ -358,22 +371,6 @@ lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_l
     change abs (a (N + m + k) - la) < ε at hN,
     rwa hm at hN,
   },
-end
-
-lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
-  have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
-    intro n,
-    norm_cast,
-    exact nat.succ_ne_zero n,
-  end,
-  conv {
-    congr,
-    { funext,
-      rw [pow_succ, ←one_div_mul_one_div, ←one_div_pow (h n)],
-    },
-    { rw ←zero_mul (0 ^ k : ℝ) }
-  },
-  refine lim_mul_eq_mul_lim (lim_of_reciprocal) (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
 
 lemma lim_abs_eq_zero_iff {a : seq} : is_limit (abs ∘ a) 0 ↔ is_limit a 0 := begin
@@ -916,7 +913,7 @@ theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
   ∃ (n : ℕ → ℕ) (hn : strict_mono n), seq_converges (a ∘ n) :=
 begin
   let peak_points : set ℕ := is_peak_point a,
-  cases em (set.finite peak_points) with hfin hnfin,
+  cases classical.em (set.finite peak_points) with hfin hnfin,
   { let m := option.iget hfin.to_finset.max,
     have hm : ∀ j > m, ¬is_peak_point a j := begin
       intros j hj,
