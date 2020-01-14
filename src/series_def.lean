@@ -14,6 +14,22 @@ lemma partial_sum_zero {a : seq} : partial_sum a 0 = 0 := finset.sum_range_zero 
 lemma partial_sum_succ {a : seq} {n : ℕ} : partial_sum a (n + 1) = partial_sum a n + a n :=
   finset.sum_Ico_succ_top (nat.zero_le n) a
 
+lemma partial_sum_tail {a : seq} {n : ℕ} : partial_sum a (n + 1) = a 0 + partial_sum (a ∘ (+ 1)) n := begin
+  unfold partial_sum,
+  rw finset.sum_eq_sum_Ico_succ_bot (nat.succ_pos n) a,
+  refine congr_arg (λ x, (a 0) + x) _,
+  refine congr_arg multiset.sum _,
+  conv_rhs { rw ←multiset.map_map, },
+  refine congr_arg (multiset.map a) _,
+  rw [finset.Ico.val, finset.Ico.val, nat.succ_eq_add_one],
+  have h : (λ (x : ℕ), x + 1) = has_add.add 1 := begin
+    funext,
+    exact add_comm x 1,
+  end,
+  rw h,
+  exact (multiset.Ico.map_add 0 n 1).symm,
+end
+
 def sum_to_inf_eq (a : seq) := is_limit (partial_sum a)
 
 def sum_to_inf_converges (a : seq) := seq_converges (partial_sum a)
