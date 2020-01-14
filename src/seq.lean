@@ -25,23 +25,21 @@ lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
   cases exists_nat_one_div_lt hε with N hN,
   existsi N,
   intros n hn,
-  rw sub_zero,
-  rw abs_of_pos (nat.one_div_pos_of_nat : 1 / ((n : ℝ) + 1) > 0),
+  rw [sub_zero, abs_of_pos (@nat.one_div_pos_of_nat ℝ _ n)],
   refine lt_of_le_of_lt _ hN,
-  rw one_div_le_one_div (nat.cast_add_one_pos n : 0 < (n : ℝ) + 1) (nat.cast_add_one_pos N : 0 < (N : ℝ) + 1),
+  rw one_div_le_one_div (@nat.cast_add_one_pos ℝ _ n) (@nat.cast_add_one_pos ℝ _ N),
   exact add_le_add_right' (nat.cast_le.mpr hn),
 end
 
 -- Example 3.5
 example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   intros ε hε,
-  have hε' : 0 < 4 / ε := div_pos four_pos hε,
   cases exists_nat_gt (4 / ε) with N hN,
-  existsi N + 1,
+  existsi N,
   intros n hn,
-  change abs (((n : ℝ) + 5) / (n + 1) - 1) < ε,
   have hN' : 0 < (N : ℝ) + 1 := nat.cast_add_one_pos N,
   have hn' : 0 < (n : ℝ) + 1 := nat.cast_add_one_pos n,
+  change abs (((n : ℝ) + 5) / (n + 1) - 1) < ε,
   rw abs_of_pos,
   show ((n : ℝ) + 5) / (n + 1) - 1 > 0, by {
     rw [gt_iff_lt, sub_pos],
@@ -50,11 +48,10 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
   },
   calc
     ((n : ℝ) + 5) / (n + 1) - 1 = (n + 5) / (n + 1) - (n + 1) / (n + 1) : by rw div_self (ne_of_gt hn')
-      ... = 4 / (n + 1) : by ring
-      ... < 4 / (N + 1) : by {
-        rw div_lt_div_left four_pos hn' hN',
-        norm_cast,
-        exact add_lt_add_right hn 1,
+      ... = 4 / (n + 1) : by { rw ←sub_div, norm_num }
+      ... ≤ 4 / (N + 1) : by {
+        rw div_le_div_left four_pos hn' hN',
+        exact add_le_add_right (nat.cast_le.mpr hn) 1,
       }
       ... < ε : (div_lt_iff'' hN' hε).mpr (lt_trans hN (lt_add_one N)),
 end
@@ -467,8 +464,7 @@ begin
   existsi -x,
   rintros y ⟨n, hn⟩,
   subst hn,
-  change -(a n) ≤ -x,
-  rw neg_le_neg_iff,
+  erw neg_le_neg_iff,
   exact hx (set.mem_range_self n),
 end
 
@@ -480,9 +476,7 @@ begin
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
   replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
-  rw [←sub_pos, sub_neg_eq_add, add_eq_of_eq_sub' rfl] at hN,
-  change 0 < a N - b N at hN,
-  rw sub_pos at hN,
+  erw [←sub_pos, sub_neg_eq_add, add_eq_of_eq_sub' rfl, sub_pos ] at hN,
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
 end
 
@@ -578,24 +572,23 @@ end
 lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
   cases decidable.em (r = 0) with h h,
   { rw lim_eq_lim_of_tail 1,
-    change is_limit (λ n, r ^ (n + 1)) 0,
+    dsimp only [function.comp],
     conv {
       congr,
       { funext,
-        rw [h, zero_pow (nat.succ_pos n)],
+        rw [h, zero_pow (nat.succ_pos x)],
       }
     },
     exact lim_of_const_seq,
   },
   { replace h := abs_pos_of_ne_zero h,
-    simp at hr,
-    rw ←abs_lt at hr,
+    rw [set.mem_Ioo, ←abs_lt] at hr,
     have hr' : abs r ∈ set.Ioo (0 : ℝ) (1 : ℝ) := ⟨h, hr⟩,
     rw ←lim_abs_eq_zero_iff,
+    dsimp only [function.comp],
     conv {
       congr,
-      { change λ (n : ℕ), abs (r ^ n),
-        funext,
+      { funext,
         rw ←pow_abs,
       }
     },
@@ -606,7 +599,7 @@ end
 lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
   let x := r - 1,
   simp at hr,
-  have hx : r = 1 + x := by { dsimp only [x], ring, },
+  have hx : r = 1 + x := by { dsimp only [x], exact (add_eq_of_eq_sub' rfl).symm, },
   have hx' : x > 0 := sub_pos_of_lt hr,
   intros M hM,
   cases exists_nat_gt (M / x) with N hN,
@@ -744,6 +737,40 @@ lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_abo
 lemma bdd_below_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_below a) : seq_bdd_below (a ∘ (+ k)) := 
   bdd_below_subset (set.range_comp_subset_range (+ k) a) ha
 
+lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq_bdd_above (a ∘ (+ k)) := begin
+  split,
+  { intro ha,
+    exact bdd_above_subset (set.range_comp_subset_range (+ k) a) ha,
+  },
+  { rintro ⟨B, hB⟩,
+    let head : finset ℝ := (finset.range (k + 1)).image a,
+    have head_has_mem : a 0 ∈ head := begin
+      refine finset.mem_image_of_mem a _,
+      rw finset.mem_range,
+      exact nat.succ_pos k,
+    end,
+    cases finset.max_of_mem head_has_mem with B' hB',
+    let M := max B B',
+    existsi M,
+    intros x hx,
+    rw set.mem_range at hx,
+    cases hx with n hn,
+    subst hn,
+    cases le_or_gt n k with h h,
+    { refine le_trans (finset.le_max_of_mem _ hB') (le_max_right B B'),
+      refine finset.mem_image_of_mem a _,
+      rw finset.mem_range,
+      exact nat.lt_succ_of_le h,
+    },
+    { refine le_trans (hB _) (le_max_left B B'),
+      cases nat.exists_eq_add_of_lt h with x hx,
+      subst hx,
+      rw [add_assoc, add_comm],
+      exact set.mem_range_self (x + 1),
+    }
+  }
+end
+
 lemma Inf_decreasing_eq_Inf_tail {a : seq} (n : ℕ) (ha_decr : seq_decreasing a) (ha_bdd : seq_bdd_below a) :
   real.Inf (set.range a) = real.Inf (set.range (a ∘ (+ n))) :=
 begin
@@ -761,10 +788,8 @@ begin
         exact nat.le.dest h,
       },
       { replace h := ha_decr (le_of_lt h),
-        change -a k ≤ -a n at h,
-        rw neg_le_neg_iff at h,
-        refine le_trans _ h,
-        refine real.Inf_le (set.range (a ∘ (+ n))) (bdd_below_of_tail n ha_bdd) _,
+        erw neg_le_neg_iff at h,
+        refine le_trans (real.Inf_le (set.range (a ∘ (+ n))) (bdd_below_of_tail n ha_bdd) _) h,
         rw set.range_comp,
         refine set.mem_image_of_mem a _,
         existsi 0,
@@ -890,7 +915,7 @@ begin
       intros j hj,
       by_contradiction hj',
       change j ∈ peak_points at hj',
-      cases h : finset.max hfin.to_finset with x,
+      cases h : hfin.to_finset.max with x,
       { rw finset.max_eq_none at h,
         replace hj' : j ∈ set.finite.to_finset hfin := set.finite.mem_to_finset.mpr hj',
         rw h at hj',
@@ -925,7 +950,7 @@ lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : is_limit 
   cases hl ε hε with N hN,
   existsi N,
   intros k hk,
-  refine hN (n k) (le_trans hk (nat.ge_index_of_strict_mono hn k)),
+  exact hN (n k) (le_trans hk (nat.ge_index_of_strict_mono hn k)),
 end
 
 end sec_3_3
