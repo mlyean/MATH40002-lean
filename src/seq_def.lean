@@ -4,8 +4,6 @@ import algebra.pi_instances
 namespace real_seq
 
 def seq : Type := ℕ → ℝ
-
--- Basic operations on sequences
 def const_seq (x : ℝ) : seq := λ _, x
 
 -- Properties of sequences

@@ -173,9 +173,9 @@ lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
     rw finset.mem_range,
     exact nat.lt_succ_of_le h,
   },
-  { have h' : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n (le_of_lt h)),
-    rw sub_lt_iff_lt_add' at h',
-    exact le_trans (le_of_lt h') (le_max_right B (abs l + 1)),
+  { have : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n (le_of_lt h)),
+    rw sub_lt_iff_lt_add' at this,
+    exact le_trans (le_of_lt this) (le_max_right B (abs l + 1)),
   }
 end
 
@@ -347,7 +347,7 @@ lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))
     },
     { rw ←zero_mul (0 ^ k : ℝ) }
   },
-  refine lim_mul_eq_mul_lim (lim_of_reciprocal) (lim_pow_eq_pow_lim lim_of_reciprocal),
+  exact lim_mul_eq_mul_lim lim_of_reciprocal (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
 
 lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_limit (a ∘ (+ k)) la := begin
@@ -744,11 +744,7 @@ lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq
   },
   { rintro ⟨B, hB⟩,
     let head : finset ℝ := (finset.range (k + 1)).image a,
-    have head_has_mem : a 0 ∈ head := begin
-      refine finset.mem_image_of_mem a _,
-      rw finset.mem_range,
-      exact nat.succ_pos k,
-    end,
+    have head_has_mem : a 0 ∈ head := by simp,
     cases finset.max_of_mem head_has_mem with B' hB',
     let M := max B B',
     existsi M,
@@ -844,8 +840,8 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     rintros x ⟨k, hk⟩,
     subst hk,
     refine le_of_lt _,
-    have h := (abs_lt.mp (hN n hn (k + N) (nat.le_add_left N k))).right,
-    rwa sub_lt_iff_lt_add' at h,
+    have := (abs_lt.mp (hN n hn (k + N) (nat.le_add_left N k))).right,
+    rwa sub_lt_iff_lt_add' at this,
   },
   { rw sub_le,
     have h : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
