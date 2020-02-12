@@ -251,11 +251,11 @@ begin
   existsi N,
   intros n hn,
   replace hN₁ : abs (b n) > abs lb / 2 := begin
-    have h : abs lb - abs (b n) < abs lb / 2 := calc
+    have : abs lb - abs (b n) < abs lb / 2 := calc
       abs lb - abs (b n) ≤ abs (lb - b n) : abs_sub_abs_le_abs_sub lb (b n)
         ... = abs (b n - lb) : by rw abs_sub
         ... < abs lb / 2 : hN₁ n (le_trans (le_max_left _ _) hn),
-    rwa [sub_lt_iff_lt_add, ←sub_lt_iff_lt_add', sub_half] at h,
+    rwa [sub_lt_iff_lt_add, ←sub_lt_iff_lt_add', sub_half] at this,
   end,
   replace hN₂ := hN₂ n (le_trans (le_trans (le_max_left _ _) (le_max_right _ _)) hn),
   replace hN₃ := hN₃ n (le_trans (le_trans (le_max_right _ _) (le_max_right _ _)) hn),
@@ -265,15 +265,15 @@ begin
       ... = abs (a n - la) * abs lb + abs la * abs (b n - lb) : by rw [abs_mul, abs_mul, abs_sub lb (b n)]
       ... < (ε * abs lb / 4) * abs lb + abs la * ε * abs lb ^ 2 / (4 * abs la + 1) : by {
         refine add_lt_add_of_lt_of_le (mul_lt_mul_of_pos_right hN₂ hlb') _,
-        have hsimp : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
-        rw hsimp,
+        have : abs la * ε * abs lb ^ 2 / (4 * abs la + 1) = abs la * (ε * abs lb ^ 2 / (4 * abs la + 1)) := by ring,
+        rw this,
         exact mul_le_mul_of_nonneg_left (le_of_lt hN₃) (abs_nonneg la),
       }
       ... = ε * abs lb * abs lb * (1 / 4 + abs la / (4 * abs la + 1)) : by { rw pow_two, ring }
       ... < (ε * abs lb * abs lb) * (1 / 2) : by {
         refine mul_lt_mul_of_pos_left _ (mul_pos (mul_pos hε hlb') hlb'),
-        have hsimp : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
-        rw [hsimp, add_lt_add_iff_left, div_lt_iff' hla', ←div_eq_mul_one_div, lt_div_iff' four_pos],
+        have : (1 / 2 : ℝ) = 1 / 4 + 1 / 4 := by norm_num,
+        rw [this, add_lt_add_iff_left, div_lt_iff' hla', ←div_eq_mul_one_div, lt_div_iff' four_pos],
         exact lt_add_one (4 * abs la),
       }
       ... = ε * abs lb * abs lb / 2 : by ring,
@@ -775,9 +775,9 @@ lemma Inf_decreasing_eq_Inf_tail {a : seq} (n : ℕ) (ha_decr : seq_decreasing a
   real.Inf (set.range a) = real.Inf (set.range (a ∘ (+ n))) :=
 begin
   refine le_antisymm _ _,
-  { exact Inf_le_Inf_subset (set.range_comp_subset_range (+ n) a) ha_bdd (set.range_ne_empty (a ∘ (+ n))) },
+  { exact Inf_le_Inf_subset (set.range_comp_subset_range (+ n) a) ha_bdd (set.range_nonempty (a ∘ (+ n))) },
   { refine real.lb_le_Inf (set.range a) _ _,
-    { exact set.exists_mem_of_ne_empty (set.range_ne_empty a) },
+    { exact set.range_nonempty a },
     { rintros x ⟨k, hk⟩,
       subst hk,
       cases le_or_gt n k with h h,
@@ -808,9 +808,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     intros m n hmn,
     change -real.Sup (set.range (a ∘ (+ m))) ≤ -real.Sup (set.range (a ∘ (+ n))),
     rw neg_le_neg_iff,
-    refine Sup_subset_le_Sup _ _ _,
-    show bdd_above (set.range (a ∘ (+ m))), from bdd_above_of_tail m ha_bdd_above,
-    show set.range (a ∘ (+ n)) ≠ ∅, from set.range_ne_empty (a ∘ (+ n)),
+    refine Sup_subset_le_Sup _ (bdd_above_of_tail m ha_bdd_above) (set.range_nonempty (a ∘ (+ n))),
     rw [set.range_comp, set.range_comp],
     refine set.image_subset a (range_add_subset_range_add hmn),
   end,
@@ -821,7 +819,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     subst hk,
     dsimp only [b],
     refine le_trans (hA (set.mem_range_self k)) _,
-    refine real.le_Sup (set.range (a ∘ (+ k))) (bdd_above_of_tail k ha_bdd_above) _,
+    refine real.le_Sup _ (bdd_above_of_tail k ha_bdd_above) _,
     rw set.range_comp,
     refine set.mem_image_of_mem a _,
     existsi 0,
@@ -842,7 +840,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     refine le_trans (real.Inf_le (set.range b) hb_bdd_below (set.mem_range_self N)) _,
     dsimp only [b],
     refine real.Sup_le_ub (set.range (a ∘ (+ N))) _ _,
-    show ∃ x, x ∈ set.range (a ∘ (+ N)), from set.exists_mem_of_ne_empty (set.range_ne_empty (a ∘ (+ N))),
+    show ∃ x, x ∈ set.range (a ∘ (+ N)), from set.range_nonempty (a ∘ (+ N)),
     rintros x ⟨k, hk⟩,
     subst hk,
     refine le_of_lt _,
@@ -853,7 +851,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     have h : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
     rw h,
     refine (real.le_Inf (set.range (b ∘ (+ N))) _ _).mpr _,
-    show ∃ x, x ∈ set.range (b ∘ (+ N)), from set.exists_mem_of_ne_empty (set.range_ne_empty (b ∘ (+ N))),
+    show ∃ x, x ∈ set.range (b ∘ (+ N)), from set.range_nonempty (b ∘ (+ N)),
     show seq_bdd_below (b ∘ (+ N)), from bdd_below_of_tail N hb_bdd_below,
     rintros x ⟨k, hk⟩,
     dsimp at hk,
@@ -873,8 +871,8 @@ end
 theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨converges_of_cauchy, cauchy_of_converges⟩
 
 -- Exercise 3.22
-example (M : ℝ) (S : set ℝ) (hS : S ≠ ∅) (hM : ∀ x ∈ S, x < M) : real.Sup S ≤ M := begin
-  refine real.Sup_le_ub S (set.exists_mem_of_ne_empty hS) _,
+example (M : ℝ) (S : set ℝ) (hS : S.nonempty) (hM : ∀ x ∈ S, x < M) : real.Sup S ≤ M := begin
+  refine real.Sup_le_ub S hS _,
   intros x hx,
   exact le_of_lt (hM x hx),
 end

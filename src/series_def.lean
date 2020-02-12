@@ -9,7 +9,7 @@ section sec_4_1
 
 def partial_sum (a : seq) : seq := λ n, (finset.Ico 0 n).sum a
 
-lemma partial_sum_zero {a : seq} : partial_sum a 0 = 0 := finset.sum_range_zero a
+@[simp] lemma partial_sum_zero {a : seq} : partial_sum a 0 = 0 := finset.sum_range_zero a
 
 lemma partial_sum_succ {a : seq} {n : ℕ} : partial_sum a (n + 1) = partial_sum a n + a n :=
   finset.sum_Ico_succ_top (nat.zero_le n) a
