@@ -1,9 +1,23 @@
 import data.real.basic
+import data.complex.basic
+import data.set.basic
 import algebra.pi_instances
 
 namespace real_seq
 
+def cseq_on (s : set ℂ) : Type := ℕ → psigma s
+def cseq : Type := ℕ → ℂ
+def seq_on (s : set ℝ) : Type := ℕ → psigma s
 def seq : Type := ℕ → ℝ
+
+instance coe_cseq_on {s₁ s₂ : set ℂ} (h : s₁ ⊆ s₂) : has_coe (cseq_on s₁) (cseq_on s₂) := ⟨λ a n, ⟨(a n).fst, h (a n).snd⟩⟩
+instance coe_cseq_on₂ {s : set ℂ} : has_coe (cseq_on s) cseq := ⟨λ a n, (a n).fst⟩
+instance coe_cseq : has_coe cseq (set ℂ) := ⟨set.range⟩
+instance coe_seq_on {s₁ s₂ : set ℝ} (h : s₁ ⊆ s₂) : has_coe (seq_on s₁) (seq_on s₂) := ⟨λ a n, ⟨(a n).fst, h (a n).snd⟩⟩
+instance coe_seq_on₂ {s : set ℝ} : has_coe (seq_on s) seq := ⟨λ a n, (a n).fst⟩
+instance coe_seq_ℂ : has_coe seq cseq := ⟨λ a n, coe (a n)⟩
+instance coe_seq : has_coe seq (set ℝ) := ⟨set.range⟩
+
 def const_seq (x : ℝ) : seq := λ _, x
 
 -- Properties of sequences
@@ -59,24 +73,65 @@ def seq_bdd_above (a : seq) := bdd_above (set.range a)
 def seq_bdd_below (a : seq) := bdd_below (set.range a)
 def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
+lemma seq_bdd_above_iff {a : seq} : seq_bdd_above a ↔ ∃ A > 0, ∀ n, a n ≤ A := begin
+  split,
+  { rintro ⟨A, hA⟩,
+    let A' := max A 1,
+    have hA' : A' > 0 := lt_of_lt_of_le zero_lt_one (le_max_right A 1),
+    existsi [A', hA'],
+    intro n,
+    exact le_trans (hA (set.mem_range_self n)) (le_max_left A 1),
+  },
+  { rintro ⟨A, ⟨hA₁, hA₂⟩⟩,
+    existsi A,
+    intros x hx,
+    rw set.mem_range at hx,
+    cases hx with y hy,
+    subst hy,
+    exact hA₂ y,
+  }
+end
+
+lemma seq_bdd_below_iff {a : seq} : seq_bdd_below a ↔ ∃ A > 0, ∀ n, a n ≥ -A := begin
+  split,
+  { rintro ⟨A, hA⟩,
+    let A' := max (-A) 1,
+    have hA' : A' > 0 := lt_of_lt_of_le zero_lt_one (le_max_right (-A) 1),
+    existsi [A', hA'],
+    intro n,
+    refine le_trans _ (hA (set.mem_range_self n)),
+    rw neg_le,
+    exact le_max_left (-A) 1,
+  },
+  { rintro ⟨A, ⟨hA₁, hA₂⟩⟩,
+    existsi (-A),
+    intros x hx,
+    rw set.mem_range at hx,
+    cases hx with y hy,
+    subst hy,
+    exact hA₂ y,
+  }
+end
+
 lemma seq_bdd_above_of_bdd {a : seq} (h : seq_bdd a) : seq_bdd_above a := begin
   rcases h with ⟨A, ⟨hA, hA'⟩⟩,
   existsi A,
   rintros x ⟨n, hn⟩,
-  rw ←hn,
-  exact (abs_le.1 (hA' n)).2,
+  subst hn,
+  exact (abs_le.mp (hA' n)).right,
 end
 
 lemma seq_bdd_below_of_bdd {a : seq} (h : seq_bdd a) : seq_bdd_below a := begin
   rcases h with ⟨A, ⟨hA, hA'⟩⟩,
   existsi -A,
   rintros x ⟨n, hn⟩,
-  rw ←hn,
-  exact (abs_le.1 (hA' n)).1,
+  subst hn,
+  exact (abs_le.mp (hA' n)).left,
 end
 
 -- Limits
 def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ N, ∀ n ≥ N, abs ((a n) - l) < ε
+notation a ` ⟶ ` l := is_limit a l
 
 -- Convergence
 def seq_converges (a : seq) := ∃ (l : ℝ), is_limit a l
@@ -87,6 +142,8 @@ lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_conv
 def seq_diverges (a : seq) := ¬ seq_converges a
 def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n > M
 def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (-a)
+notation a ` →+∞ ` := seq_diverges_to_pos_inf a
+notation a ` →-∞ ` := seq_diverges_to_neg_inf a
 
 lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
   unfold seq_diverges seq_converges is_limit,
@@ -96,7 +153,7 @@ end
 
 -- Monotonicity
 def seq_increasing (a : seq) := monotone a
-def seq_decreasing (a : seq) := monotone (-a : seq)
+def seq_decreasing (a : seq) := monotone (-a)
 
 end sec_3_1
 

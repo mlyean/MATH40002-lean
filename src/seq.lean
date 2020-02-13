@@ -11,7 +11,7 @@ open real_seq
 -- Section 3.1 : Convergence of Sequences
 section sec_3_1
 
-lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
+lemma lim_of_const_seq {a : ℝ} : const_seq a ⟶ a := begin
   intros ε hε,
   existsi 0,
   intros n Hn,
@@ -20,7 +20,7 @@ lemma lim_of_const_seq {a : ℝ} : is_limit (const_seq a) a := begin
 end
 
 -- Example 3.4
-lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
+lemma lim_of_reciprocal : (λ n, 1 / (n + 1)) ⟶ 0 := begin
   intros ε hε,
   cases exists_nat_one_div_lt hε with N hN,
   existsi N,
@@ -32,7 +32,7 @@ lemma lim_of_reciprocal : is_limit (λ n, 1 / (n + 1)) 0 := begin
 end
 
 -- Example 3.5
-example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
+example : (λ n, (n + 5) / (n + 1)) ⟶ 1 := begin
   intros ε hε,
   cases exists_nat_gt (4 / ε) with N hN,
   existsi N,
@@ -57,7 +57,7 @@ example : is_limit (λ n, (n + 5) / (n + 1)) 1 := begin
 end
 
 -- Example 3.6
-example : is_limit (λ n, (n + 2) / (n - 2)) 1 := begin
+example : (λ n, (n + 2) / (n - 2)) ⟶ 1 := begin
   intros ε hε,
   cases exists_nat_gt (max 4 (8 / ε)) with N hN,
   existsi N,
@@ -132,7 +132,7 @@ lemma close_implies_eq (a b : ℝ) : (∀ ε > 0, abs (a - b) < ε) → a = b :=
 end
 
 -- Theorem 3.9 (Uniqueness of limits)
-theorem limit_unique {a : seq} {l₁ l₂ : ℝ} (h₁ : is_limit a l₁) (h₂ : is_limit a l₂) : l₁ = l₂ := begin
+theorem limit_unique {a : seq} {l₁ l₂ : ℝ} (h₁ : a ⟶ l₁) (h₂ : a ⟶ l₂) : l₁ = l₂ := begin
   refine close_implies_eq l₁ l₂ _,
   intros ε hε,
   cases h₁ (ε / 2) (half_pos hε) with N₁ hN₁,
@@ -182,8 +182,8 @@ end
 -- Theorem 3.11 (Algebra of limits)
 section algebra_of_limits
 
-theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
-  is_limit (a + b) (la + lb) :=
+theorem lim_add_eq_add_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
+  a + b ⟶ la + lb :=
 begin
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
@@ -200,8 +200,8 @@ begin
       ... = ε : add_halves ε,
 end
 
-theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
-  is_limit (a * b) (la * lb) :=
+theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
+  a * b ⟶ la * lb :=
 begin
   intros ε hε,
   rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
@@ -236,8 +236,8 @@ begin
       ... = ε : add_halves ε,
 end
 
-theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : is_limit a la) (hlb : is_limit b lb) :
-  is_limit (a / b) (la / lb) :=
+theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : a ⟶ la) (hlb : b ⟶ lb) :
+  a / b ⟶ la / lb :=
 begin
   have hla' : 4 * abs la + 1 > 0 := lt_of_le_of_lt (mul_nonneg (le_of_lt four_pos) (abs_nonneg la)) (lt_add_one (4 * abs la)),
   have hlb' : abs lb > 0 := abs_pos_of_ne_zero hlb_ne_zero,
@@ -295,7 +295,7 @@ begin
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
-theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (-a) (-la) := begin
+theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : -a ⟶ -la := begin
   conv {
     congr,
     { change (λ n, -a n), funext, rw neg_eq_neg_one_mul },
@@ -304,10 +304,10 @@ theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lim_mul_eq_mul_lim lim_of_const_seq hla,
 end
 
-theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : is_limit a la) (hlb : is_limit b lb) :
-  is_limit (a - b) (la - lb) := lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
+theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
+  a - b ⟶ la - lb := lim_add_eq_add_lim hla (lim_neg_eq_neg_lim hlb)
 
-theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit (abs ∘ a) (abs la) := begin
+theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : abs ∘ a ⟶ abs la := begin
   intros ε hε,
   cases hla ε hε with N hN,
   existsi N,
@@ -315,7 +315,7 @@ theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : is_limit a la) : is_limit
   exact lt_of_le_of_lt (abs_abs_sub_abs_le_abs_sub (a n) la) (hN n hn),
 end
 
-theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : is_limit a la) : is_limit ((^ n) ∘ a) (la ^ n) := begin
+theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) := begin
   induction n with n hn,
   { simp,
     exact lim_of_const_seq,
@@ -334,7 +334,7 @@ end
 
 end algebra_of_limits
 
-lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) 0 := begin
+lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 := begin
   have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
     intro n,
     norm_cast,
@@ -350,7 +350,7 @@ lemma lim_of_neg_pow {k : ℕ} : is_limit (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))
   exact lim_mul_eq_mul_lim lim_of_reciprocal (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
 
-lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_limit (a ∘ (+ k)) la := begin
+lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ ((a ∘ (+ k)) ⟶ la) := begin
   split,
   { intros hla ε hε,
     cases hla ε hε with N hN,
@@ -370,7 +370,7 @@ lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : is_limit a la ↔ is_l
   },
 end
 
-lemma lim_abs_eq_zero_iff {a : seq} : is_limit (abs ∘ a) 0 ↔ is_limit a 0 := begin
+lemma lim_abs_eq_zero_iff {a : seq} : ((abs ∘ a) ⟶ 0) ↔ (a ⟶ 0) := begin
   split,
   { intros hla ε hε,
     cases hla ε hε with N hN,
@@ -391,7 +391,7 @@ lemma lim_abs_eq_zero_iff {a : seq} : is_limit (abs ∘ a) 0 ↔ is_limit a 0 :=
 end
 
 -- Remark 3.12
-example : is_limit (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) 0 := begin
+example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
   have hsimp : (λ (n : ℕ), (((↑n : ℝ) + 1) ^ 2 + 5) / ((↑n + 1) ^ 3 - (↑n + 1) + 6)) =
     (λ (n : ℕ), (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1 - (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
   begin
@@ -425,7 +425,7 @@ end
 
 -- Theorem 3.13 (Monotone convergence theorem)
 theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
-  is_limit a (real.Sup (set.range a)) :=
+  a ⟶ real.Sup a :=
 begin
   set l := real.Sup (set.range a),
   intros ε hε,
@@ -451,7 +451,7 @@ begin
 end
 
 theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) :
-  is_limit a (real.Inf (set.range a)) :=
+  a ⟶ real.Inf a :=
 begin
   let b : seq := -a,
   rw ←neg_neg a,
@@ -469,7 +469,7 @@ begin
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : is_limit a la) (hlb : is_limit b lb) :
+theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : a ⟶ la) (hlb : b ⟶ lb) :
   la ≤ lb :=
 begin
   by_contradiction h,
@@ -480,8 +480,8 @@ begin
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
 end
 
-theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : is_limit a la) :
-  is_limit (real.sqrt ∘ a) (real.sqrt la) :=
+theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : a ⟶ la) :
+  (real.sqrt ∘ a) ⟶ (real.sqrt la) :=
 begin
   have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha lim_of_const_seq hla,
   cases lt_or_eq_of_le hla_nonneg with h h,
@@ -529,7 +529,7 @@ lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1
   }
 end
 
-lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : is_limit (λ n, 1 / (1 + x) ^ n) 0 := begin
+lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : (λ n, 1 / (1 + x) ^ n) ⟶ 0 := begin
   intros ε hε,
   cases exists_nat_gt (1 / (ε * x)) with N hN,
   existsi N,
@@ -543,7 +543,7 @@ lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : is_limit (λ n, 1 / (1 + x) 
       ... ≤ (1 + x) ^ n : bernoulli_inequality (lt_trans zero_gt_neg_one hx),
 end
 
-lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
+lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : (λ n, r ^ n) ⟶ 0 := begin
   let x := 1 / r - 1,
   cases hr with hr_pos hr_lt_one,
   have hx_pos : 0 < x := begin
@@ -569,7 +569,7 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : is_l
   exact lim_of_geom_zero_aux hx_pos,
 end
 
-lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : is_limit (λ n, r ^ n) 0 := begin
+lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (λ n, r ^ n) ⟶ 0 := begin
   cases decidable.em (r = 0) with h h,
   { rw lim_eq_lim_of_tail 1,
     dsimp only [function.comp],
@@ -614,8 +614,8 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to
 end
 
 -- Example 3.15
-example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : is_limit (λ n, abs (a (n + 1) / a n)) L) :
-  is_limit a 0 :=
+example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : (λ n, abs (a (n + 1) / a n)) ⟶ L) :
+  a ⟶  0 :=
 begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
     refine ⟨lim_le_of_seq_le _ lim_of_const_seq hL, hL_lt_one⟩,
@@ -768,7 +768,7 @@ lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq
 end
 
 lemma Inf_decreasing_eq_Inf_tail {a : seq} (n : ℕ) (ha_decr : seq_decreasing a) (ha_bdd : seq_bdd_below a) :
-  real.Inf (set.range a) = real.Inf (set.range (a ∘ (+ n))) :=
+  real.Inf a = real.Inf (set.range (a ∘ (+ n))) :=
 begin
   refine le_antisymm _ _,
   { exact Inf_le_Inf_subset (set.range_comp_subset_range (+ n) a) ha_bdd (set.range_nonempty (a ∘ (+ n))) },
@@ -822,7 +822,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     exact zero_add k,
   end,
   have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
-  set lb := real.Inf (set.range b),
+  set lb := real.Inf b,
   existsi lb,
   intros ε hε,
   cases ha (ε / 2) (half_pos hε) with N hN,
@@ -833,7 +833,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
   split,
   { rw neg_le_sub_iff_le_add,
     dsimp only [lb],
-    refine le_trans (real.Inf_le (set.range b) hb_bdd_below (set.mem_range_self N)) _,
+    refine le_trans (real.Inf_le b hb_bdd_below (set.mem_range_self N)) _,
     dsimp only [b],
     refine real.Sup_le_ub (set.range (a ∘ (+ N))) _ _,
     show ∃ x, x ∈ set.range (a ∘ (+ N)), from set.range_nonempty (a ∘ (+ N)),
@@ -937,7 +937,7 @@ end
 end thm_3_26
 
 -- Proposition 3.28
-lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : is_limit a l) : is_limit b l := begin
+lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : a ⟶ l) : b ⟶ l := begin
   rcases h with ⟨n, ⟨hn, hb⟩⟩,
   subst hb,
   intros ε hε,
