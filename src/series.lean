@@ -265,6 +265,29 @@ begin
 end
 
 -- Theorem 4.9 (Algebra of Limits)
+theorem sum_add_eq_add_sum {a b : seq} {la lb : ℝ} (hla : (∑ a ⟶ la)) (hlb : ∑ b ⟶ lb) :
+  ∑ a + b ⟶ la + lb :=
+begin
+  unfold sum_to_inf_eq partial_sum,
+  conv {
+    congr,
+    funext,
+    erw finset.sum_add_distrib,
+  },
+  exact lim_add_eq_add_lim hla hlb,
+end
+
+theorem sum_smul_eq_mul_sum {a : seq} {la c : ℝ} (hla : (∑ a ⟶ la)) :
+  ∑ c • a ⟶ c * la :=
+begin
+  unfold sum_to_inf_eq partial_sum,
+  conv {
+    congr,
+    funext,
+    erw ←finset.mul_sum,
+  },
+  exact lim_mul_eq_mul_lim lim_of_const_seq hla,
+end
 
 end sec_4_1
 
