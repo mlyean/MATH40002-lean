@@ -309,13 +309,16 @@ begin
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
 
+theorem lim_smul_eq_mul_lim {a : seq} {la : ℝ} (c : ℝ) (hla : a ⟶ la) : c • a ⟶ c * la :=
+  lim_mul_eq_mul_lim lim_of_const_seq hla
+
 theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : -a ⟶ -la := begin
   conv {
     congr,
     { change (λ n, -a n), funext, rw neg_eq_neg_one_mul },
     { rw neg_eq_neg_one_mul }
   },
-  exact lim_mul_eq_mul_lim lim_of_const_seq hla,
+  exact lim_smul_eq_mul_lim (-1) hla,
 end
 
 theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
@@ -332,7 +335,7 @@ end
 theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) := begin
   induction n with n hn,
   { simp only [nat.nat_zero_eq_zero, pow_zero],
-    exact lim_of_const_seq,
+    exact lim_of_one,
   },
   { conv {
       congr,
@@ -653,7 +656,7 @@ lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (�
   }
 end
 
-lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) →+∞ := begin
+lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) ⟶+∞ := begin
   let x := r - 1,
   rw set.mem_Ioi at hr,
   have hx : r = 1 + x := by { dsimp only [x], exact (add_eq_of_eq_sub' rfl).symm, },
@@ -677,7 +680,7 @@ begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
     refine ⟨lim_le_of_seq_le _ lim_of_const_seq hL, hL_lt_one⟩,
     intro n,
-    exact abs_nonneg _, 
+    exact abs_nonneg _,
   end,
   clear hL_lt_one,
   intros ε hε,

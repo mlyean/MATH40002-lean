@@ -33,6 +33,7 @@ instance : has_sub seq := ⟨λ a b n, a n - b n⟩
 instance : has_le seq := ⟨λ a b, ∀ n, a n ≤ b n⟩
 instance : has_lt seq := ⟨λ a b, ∀ n, a n < b n⟩
 noncomputable instance : has_div seq := ⟨λ a b n, a n / b n⟩
+instance : has_scalar ℝ seq := ⟨λ c a n, c * a n⟩ 
 
 variables (a b c : seq)
 
