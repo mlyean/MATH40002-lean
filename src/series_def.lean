@@ -31,15 +31,15 @@ lemma partial_sum_succ_sub (a : seq) (n : ℕ) : partial_sum a (n + 1) - partial
   sub_eq_iff_eq_add'.mpr partial_sum_succ
 
 def sum_to_inf_eq (a : seq) := is_limit (partial_sum a)
-notation `Σ ` a ` ⟶ ` l := sum_to_inf_eq a l
+notation `∑ ` a ` ⟶ ` l := sum_to_inf_eq a l
 
 def sum_to_inf_converges (a : seq) := seq_converges (partial_sum a)
 
 def sum_to_inf_diverges (a : seq) := seq_diverges (partial_sum a)
 def sum_to_inf_diverges_to_pos_inf (a : seq) := seq_diverges_to_pos_inf (partial_sum a)
 def sum_to_inf_diverges_to_neg_inf (a : seq) := seq_diverges_to_neg_inf (partial_sum a)
-notation `Σ ` a ` ⟶+∞` := sum_to_inf_diverges_to_pos_inf a
-notation `Σ ` a ` ⟶-∞` := sum_to_inf_diverges_to_neg_inf a
+notation `∑  ` a ` ⟶+∞` := sum_to_inf_diverges_to_pos_inf a
+notation `∑ ` a ` ⟶-∞` := sum_to_inf_diverges_to_neg_inf a
 
 end sec_4_1
 
