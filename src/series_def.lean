@@ -19,24 +19,27 @@ lemma partial_sum_tail {a : seq} {n : ℕ} : partial_sum a (n + 1) = a 0 + parti
   rw finset.sum_eq_sum_Ico_succ_bot (nat.succ_pos n) a,
   refine congr_arg (λ x, (a 0) + x) _,
   refine congr_arg multiset.sum _,
-  conv_rhs { rw ←multiset.map_map, },
+  conv_rhs { rw ←multiset.map_map },
   refine congr_arg (multiset.map a) _,
   rw [finset.Ico.val, finset.Ico.val, nat.succ_eq_add_one],
-  have h : (λ (x : ℕ), x + 1) = has_add.add 1 := begin
-    funext,
-    exact add_comm x 1,
-  end,
-  rw h,
+  have : (λ (x : ℕ), x + 1) = has_add.add 1 := funext (λ x, add_comm x 1),
+  rw this,
   exact (multiset.Ico.map_add 0 n 1).symm,
 end
 
+lemma partial_sum_succ_sub (a : seq) (n : ℕ) : partial_sum a (n + 1) - partial_sum a n = a n := 
+  sub_eq_iff_eq_add'.mpr partial_sum_succ
+
 def sum_to_inf_eq (a : seq) := is_limit (partial_sum a)
+notation `Σ ` a ` ⟶ ` l := sum_to_inf_eq a l
 
 def sum_to_inf_converges (a : seq) := seq_converges (partial_sum a)
 
 def sum_to_inf_diverges (a : seq) := seq_diverges (partial_sum a)
 def sum_to_inf_diverges_to_pos_inf (a : seq) := seq_diverges_to_pos_inf (partial_sum a)
 def sum_to_inf_diverges_to_neg_inf (a : seq) := seq_diverges_to_neg_inf (partial_sum a)
+notation `Σ ` a ` →+∞` := sum_to_inf_diverges_to_pos_inf a
+notation `Σ ` a ` →-∞` := sum_to_inf_diverges_to_neg_inf a
 
 end sec_4_1
 

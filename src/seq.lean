@@ -433,7 +433,7 @@ example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
 end
 
 -- Theorem 3.13 (Monotone convergence theorem)
-theorem lim_of_bounded_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
+theorem lim_of_bdd_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
   a ⟶ real.Sup a :=
 begin
   set l := real.Sup (set.range a),
@@ -459,7 +459,7 @@ begin
   }
 end
 
-theorem lim_of_bounded_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) :
+theorem lim_of_bdd_decreaing_seq {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) :
   a ⟶ real.Inf a :=
 begin
   let b : seq := -a,
@@ -468,7 +468,7 @@ begin
   rw set.range_comp,
   refine lim_neg_eq_neg_lim _,
   simp only [neg_inj', set.mem_range, set.mem_image, exists_eq_right],
-  refine lim_of_bounded_increasing_seq ha _,
+  refine lim_of_bdd_increasing_seq ha _,
   cases ha' with x hx,
   existsi -x,
   rintros y ⟨n, hn⟩,
@@ -476,6 +476,12 @@ begin
   erw neg_le_neg_iff,
   exact hx (set.mem_range_self n),
 end
+
+theorem seq_converges_of_bdd_increasing {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
+  seq_converges a := seq_converges_of_has_limit (lim_of_bdd_increasing_seq ha ha')
+
+theorem seq_converges_of_bdd_decreasing {a : seq} (ha : seq_decreasing a) (ha' : seq_bdd_below a) :
+  seq_converges a := seq_converges_of_has_limit (lim_of_bdd_decreaing_seq ha ha')
 
 -- Example 3.14 (Order limit theorem)
 theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : a ≤ b) (hla : a ⟶ la) (hlb : b ⟶ lb) :
@@ -524,10 +530,9 @@ begin
 end
 
 -- Problem Sheet 4: Question 3 (Squeeze Theorem)
-theorem squeeze_theorem {a b c : seq} {la : ℝ} {hla : a ⟶ la} {hlc : c ⟶ la} (hab : a ≤ b) (hbc : b ≤ c) :
+theorem squeeze_theorem {a b c : seq} (la : ℝ) (hla : a ⟶ la) {hlc : c ⟶ la} (hab : a ≤ b) (hbc : b ≤ c) :
   b ⟶ la :=
 begin
-  have hac : a ≤ c := le_trans hab hbc,
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
   cases hlc (ε / 2) (half_pos hε) with Nc hNc,
@@ -867,7 +872,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     existsi 0,
     exact zero_add k,
   end,
-  have hb := lim_of_bounded_decreaing_seq hb_decr hb_bdd_below,
+  have hb := lim_of_bdd_decreaing_seq hb_decr hb_bdd_below,
   set lb := real.Inf b,
   existsi lb,
   intros ε hε,
