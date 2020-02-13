@@ -11,6 +11,8 @@ open real_seq
 -- Section 3.1 : Convergence of Sequences
 section sec_3_1
 
+section specific_limits
+
 lemma lim_of_const_seq {a : ℝ} : const_seq a ⟶ a := begin
   intros ε hε,
   existsi 0,
@@ -30,6 +32,8 @@ lemma lim_of_reciprocal : (λ n, 1 / (n + 1)) ⟶ 0 := begin
   rw one_div_le_one_div (@nat.cast_add_one_pos ℝ _ n) (@nat.cast_add_one_pos ℝ _ N),
   exact add_le_add_right' (nat.cast_le.mpr hn),
 end
+
+end specific_limits
 
 -- Example 3.5
 example : (λ n, (n + 5) / (n + 1)) ⟶ 1 := begin
@@ -236,7 +240,7 @@ begin
       ... = ε : add_halves ε,
 end
 
-theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hlb_ne_zero : lb ≠ 0) (hla : a ⟶ la) (hlb : b ⟶ lb) :
+theorem lim_div_eq_div_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) (hlb_ne_zero : lb ≠ 0) :
   a / b ⟶ la / lb :=
 begin
   have hla' : 4 * abs la + 1 > 0 := lt_of_le_of_lt (mul_nonneg (le_of_lt four_pos) (abs_nonneg la)) (lt_add_one (4 * abs la)),
@@ -317,7 +321,7 @@ end
 
 theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) := begin
   induction n with n hn,
-  { simp,
+  { simp only [nat.nat_zero_eq_zero, pow_zero],
     exact lim_of_const_seq,
   },
   { conv {
@@ -350,7 +354,7 @@ lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 :
   exact lim_mul_eq_mul_lim lim_of_reciprocal (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
 
-lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ ((a ∘ (+ k)) ⟶ la) := begin
+lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ (a ∘ (+ k) ⟶ la) := begin
   split,
   { intros hla ε hε,
     cases hla ε hε with N hN,
@@ -370,7 +374,7 @@ lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ ((a ∘
   },
 end
 
-lemma lim_abs_eq_zero_iff {a : seq} : ((abs ∘ a) ⟶ 0) ↔ (a ⟶ 0) := begin
+lemma lim_abs_eq_zero_iff {a : seq} : (abs ∘ a ⟶ 0) ↔ (a ⟶ 0) := begin
   split,
   { intros hla ε hε,
     cases hla ε hε with N hN,
@@ -393,7 +397,7 @@ end
 -- Remark 3.12
 example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
   have hsimp : (λ (n : ℕ), (((↑n : ℝ) + 1) ^ 2 + 5) / ((↑n + 1) ^ 3 - (↑n + 1) + 6)) =
-    (λ (n : ℕ), (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1 - (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
+    (λ n : ℕ, (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1 - (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
   begin
     funext,
     have hn : 1 + (n : ℝ) ≠ 0 := by { norm_cast, rw nat.one_add, exact nat.succ_ne_zero n, },
@@ -408,7 +412,7 @@ example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
     { rw hsimp' }
   },
   exact
-    lim_div_eq_div_lim (by norm_num)
+    lim_div_eq_div_lim 
       (lim_add_eq_add_lim
         lim_of_reciprocal
         (lim_mul_eq_mul_lim
@@ -420,7 +424,8 @@ example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
           lim_of_neg_pow)
         (lim_mul_eq_mul_lim
           lim_of_const_seq
-          lim_of_neg_pow)),
+          lim_of_neg_pow))
+      (by norm_num),
 end
 
 -- Theorem 3.13 (Monotone convergence theorem)
@@ -458,7 +463,7 @@ begin
   change is_limit (-b) (real.Inf (set.range ((λ x, -x) ∘ b))),
   rw set.range_comp,
   refine lim_neg_eq_neg_lim _,
-  simp,
+  simp only [neg_inj', set.mem_range, set.mem_image, exists_eq_right],
   refine lim_of_bounded_increasing_seq ha _,
   cases ha' with x hx,
   existsi -x,
@@ -469,7 +474,7 @@ begin
 end
 
 -- Example 3.14 (Order limit theorem)
-theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : ∀ n, a n ≤ b n) (hla : a ⟶ la) (hlb : b ⟶ lb) :
+theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : a ≤ b) (hla : a ⟶ la) (hlb : b ⟶ lb) :
   la ≤ lb :=
 begin
   by_contradiction h,
@@ -480,10 +485,10 @@ begin
   exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
 end
 
-theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : ∀ n, a n ≥ 0) (hla : a ⟶ la) :
+theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : a ≥ 0) (hla : a ⟶ la) :
   (real.sqrt ∘ a) ⟶ (real.sqrt la) :=
 begin
-  have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha lim_of_const_seq hla,
+  have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha (@lim_of_const_seq 0) hla,
   cases lt_or_eq_of_le hla_nonneg with h h,
   { intros ε hε,
     cases hla (ε * (real.sqrt la)) (mul_pos hε (real.sqrt_pos.mpr h)) with N hN,
@@ -514,7 +519,44 @@ begin
   }
 end
 
--- Problem Sheet 5: Question 1
+-- Problem Sheet 4: Question 3 (Squeeze Theorem)
+theorem squeeze_theorem {a b c : seq} {la : ℝ} {hla : a ⟶ la} {hlc : c ⟶ la} (hab : a ≤ b) (hbc : b ≤ c) :
+  b ⟶ la :=
+begin
+  have hac : a ≤ c := le_trans hab hbc,
+  intros ε hε,
+  cases hla (ε / 2) (half_pos hε) with Na hNa,
+  cases hlc (ε / 2) (half_pos hε) with Nc hNc,
+  let N := max Na Nc,
+  existsi N,
+  intros n hn,
+  replace hNa := hNa n (le_trans (le_max_left _ _) hn),
+  replace hNc := hNc n (le_trans (le_max_right _ _) hn),
+  have h₁ : abs (b n - la) ≤ (b n - a n) + abs (a n - la) := calc
+    abs (b n - la) ≤ abs (b n - a n) + abs (a n - la) : abs_sub_le (b n) (a n) la
+      ... = (b n - a n) + abs (a n - la) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hab n },
+  have h₂ : abs (b n - la) ≤ (c n - b n) + abs (c n - la) := calc
+    abs (b n - la) ≤ abs (b n - c n) + abs (c n - la) : abs_sub_le (b n) (c n) la
+      ... = abs (c n - b n) + abs (c n - la) : by rw abs_sub
+      ... = (c n - b n) + abs (c n - la) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hbc n },
+  have h₃ : 2 * abs (b n - la) ≤ 2 * (abs (a n - la) + abs (c n - la)) := calc
+    2 * abs (b n - la) = abs (b n - la) + abs (b n - la) : two_mul _
+      ... ≤ ((b n - a n) + abs (a n - la)) + ((c n - b n) + abs (c n - la)) : add_le_add h₁ h₂
+      ... = (c n - la) + (la - a n) + abs (a n - la) + abs (c n - la) : by ring
+      ... ≤ abs (c n - la) + abs (la - a n) + abs (a n - la) + abs (c n - la) : by {
+          repeat { refine add_le_add_right' _ },
+          exact add_le_add (le_abs_self _) (le_abs_self _),
+        }
+      ... = abs (c n - la) + abs (a n - la) + abs (a n - la) + abs (c n - la) : by rw abs_sub (a n) la
+      ... = 2 * (abs (a n - la) + abs (c n - la)) : by ring,
+  rw mul_le_mul_left (two_pos : (0 : ℝ) < 2) at h₃,
+  calc
+    abs (b n - la) ≤ abs (a n - la) + abs (c n - la) : h₃
+      ... < ε / 2 + ε / 2 : add_lt_add hNa hNc
+      ... = ε : add_halves ε,
+end
+
+-- Problem Sheet 5: Question 1 (Bernoulli Inequality)
 lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1 + n * x := begin
   induction n with n hn,
   { rw [pow_zero, nat.cast_zero, zero_mul, add_zero],
@@ -557,7 +599,7 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : (λ 
     rw h,
     refine one_div_pow _ n,
     dsimp only [x],
-    simp,
+    simp only [one_div_eq_inv, inv_eq_zero, ne.def, add_add_neg_cancel'_right, sub_eq_add_neg],
     exact ne_of_gt hr_pos,
   end,
   conv {
@@ -596,9 +638,9 @@ lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (�
   }
 end
 
-lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : seq_diverges_to_pos_inf (λ n, r ^ n) := begin
+lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) →+∞ := begin
   let x := r - 1,
-  simp at hr,
+  rw set.mem_Ioi at hr,
   have hx : r = 1 + x := by { dsimp only [x], exact (add_eq_of_eq_sub' rfl).symm, },
   have hx' : x > 0 := sub_pos_of_lt hr,
   intros M hM,
@@ -660,7 +702,7 @@ begin
   rw sub_zero,
   subst hk,
   replace hM := hM M (le_refl M),
-  simp at hM,
+  simp only [add_zero, sub_eq_add_neg, neg_zero] at hM,
   rw [lt_div_iff (abs_pos_of_ne_zero (ha N)), abs_of_pos (pow_pos (hL'_bd.1) M)] at hM,
   replace hL' := hL' (M + k),
   rw ←add_assoc at hL',
@@ -744,7 +786,7 @@ lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq
   },
   { rintro ⟨B, hB⟩,
     let head : finset ℝ := (finset.range (k + 1)).image a,
-    have head_has_mem : a 0 ∈ head := by simp,
+    have head_has_mem : a 0 ∈ head := by simp only [nat.succ_pos', finset.mem_image_of_mem, finset.mem_range],
     cases finset.max_of_mem head_has_mem with B' hB',
     let M := max B B',
     existsi M,
@@ -780,8 +822,8 @@ begin
       { refine real.Inf_le (set.range (a ∘ (+ n))) (bdd_below_of_tail n ha_bdd) _,
         rw set.range_comp,
         refine set.mem_image_of_mem a _,
-        simp,
-        exact nat.le.dest h,
+        rw set.mem_range,
+        simp only [add_comm, nat.le.dest h],
       },
       { replace h := ha_decr (le_of_lt h),
         erw neg_le_neg_iff at h,
