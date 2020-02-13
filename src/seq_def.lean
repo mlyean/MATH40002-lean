@@ -154,8 +154,8 @@ lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_conv
 def seq_diverges (a : seq) := ¬ seq_converges a
 def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n > M
 def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (-a)
-notation a ` →+∞ ` := seq_diverges_to_pos_inf a
-notation a ` →-∞ ` := seq_diverges_to_neg_inf a
+notation a ` ⟶+∞ ` := seq_diverges_to_pos_inf a
+notation a ` ⟶-∞ ` := seq_diverges_to_neg_inf a
 
 lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
   unfold seq_diverges seq_converges is_limit,
