@@ -21,6 +21,10 @@ lemma lim_of_const_seq {a : ℝ} : const_seq a ⟶ a := begin
   rwa [sub_self, abs_zero],
 end
 
+lemma lim_of_zero : 0 ⟶ 0 := @lim_of_const_seq 0
+
+lemma lim_of_one : 1 ⟶ 1 := @lim_of_const_seq 1
+
 -- Example 3.4
 lemma lim_of_reciprocal : (λ n, 1 / (n + 1)) ⟶ 0 := begin
   intros ε hε,
@@ -488,7 +492,7 @@ end
 theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : a ≥ 0) (hla : a ⟶ la) :
   (real.sqrt ∘ a) ⟶ (real.sqrt la) :=
 begin
-  have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha (@lim_of_const_seq 0) hla,
+  have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha lim_of_zero hla,
   cases lt_or_eq_of_le hla_nonneg with h h,
   { intros ε hε,
     cases hla (ε * (real.sqrt la)) (mul_pos hε (real.sqrt_pos.mpr h)) with N hN,
