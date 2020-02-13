@@ -232,6 +232,40 @@ lemma sum_one_div_pow_two : sum_to_inf_converges (λ n, 1 / (n + 1) ^ 2) := begi
   }
 end
 
+-- Proposition 4.6
+lemma sum_of_nonneg_converges_iff_bdd_above {a : seq} (ha : a ≥ 0) :
+  sum_to_inf_converges a ↔ seq_bdd_above (partial_sum a) :=
+begin
+  split,
+  { rintro ⟨s, hs⟩,
+    exact bdd_above_of_converges (seq_converges_of_has_limit hs),
+  },
+  { exact sum_of_nonneg_converges_of_bdd_above ha }
+end
+
+lemma sum_of_nonneg_diverges_iff_not_bdd_above {a : seq} (ha : a ≥ 0) :
+  sum_to_inf_diverges_to_pos_inf a ↔ ¬ seq_bdd_above (partial_sum a) :=
+begin
+  split,
+  { sorry, },
+  { sorry, }
+end
+
+-- Theorem 4.7 (Comparison Test)
+theorem comparison_test {a b : seq} (ha : a ≥ 0) (hab : a ≤ b) (hb : sum_to_inf_converges b) :
+  sum_to_inf_converges a :=
+begin
+  refine sum_of_nonneg_converges_of_bdd_above ha _,
+  rw sum_of_nonneg_converges_iff_bdd_above (le_trans ha hab) at hb,
+  cases hb with B hB,
+  existsi B,
+  rintros x ⟨y, hy⟩,
+  subst hy,
+  exact le_trans (sum_le_of_terms_le hab y) (hB (set.mem_range_self y)),
+end
+
+-- Theorem 4.9 (Algebra of Limits)
+
 end sec_4_1
 
 end MATH40002
