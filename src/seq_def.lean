@@ -30,6 +30,8 @@ instance : has_mul seq := pi.has_mul
 noncomputable instance : has_inv seq := pi.has_inv
 instance : has_neg seq := pi.has_neg
 instance : has_sub seq := ⟨λ a b n, a n - b n⟩
+instance : has_le seq := ⟨λ a b, ∀ n, a n ≤ b n⟩
+instance : has_lt seq := ⟨λ a b, ∀ n, a n < b n⟩
 noncomputable instance : has_div seq := ⟨λ a b n, a n / b n⟩
 
 variables (a b c : seq)
@@ -44,6 +46,9 @@ protected lemma one_mul : 1 * a = a := funext (λ n, one_mul (a n))
 protected lemma mul_one : a * 1 = a := funext (λ n, mul_one (a n))
 protected lemma left_distrib : a * (b + c) = a * b + a * c := funext (λ n, left_distrib _ _ _)
 protected lemma right_distrib : (a + b) * c = a * c + b * c := funext (λ n, right_distrib _ _ _)
+protected lemma le_refl : a ≤ a := λ n, le_refl (a n)
+protected lemma le_trans : a ≤ b → b ≤ c → a ≤ c := λ h₁ h₂ n, le_trans (h₁ n) (h₂ n)
+protected lemma le_antisymm : a ≤ b → b ≤ a → a = b := λ h₁ h₂, funext (λ n, le_antisymm (h₁ n) (h₂ n))
 
 end props
 
@@ -63,6 +68,13 @@ instance : ring seq := {
   mul_one := real_seq.mul_one,
   left_distrib := real_seq.left_distrib,
   right_distrib := real_seq.right_distrib,
+}
+
+instance : partial_order seq := {
+  le := real_seq.has_le.le,
+  le_refl := real_seq.le_refl,
+  le_trans := real_seq.le_trans,
+  le_antisymm := real_seq.le_antisymm,
 }
 
 -- Section 3.1 : Convergence of Sequences
