@@ -187,6 +187,12 @@ lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
   }
 end
 
+lemma bdd_above_of_converges {a : seq} : seq_converges a → seq_bdd_above a :=
+  seq_bdd_above_of_bdd ∘ bdd_of_converges
+
+lemma bdd_below_of_converges {a : seq} : seq_converges a → seq_bdd_below a :=
+  seq_bdd_below_of_bdd ∘ bdd_of_converges
+
 -- Theorem 3.11 (Algebra of limits)
 section algebra_of_limits
 
