@@ -317,6 +317,55 @@ example : sum_to_inf_converges (λ n, (-1) ^ n / (n + 1)) := begin
   sorry,
 end
 
+-- Theorem 4.11
+theorem convergent_of_abs_convergent {a : seq} (ha : abs_convergent a) : sum_to_inf_converges a := begin
+  sorry,
+end
+
 end sec_4_2
+
+-- Section 4.3 : Tests for Convergence
+section sec_4_3
+
+-- Theorem 4.18 (Comparison II)
+theorem comparison_test₂ {a b c : seq} (hca : c ≤ a) (hab : a ≤ b)
+  (hc : sum_to_inf_converges c) (hb : sum_to_inf_converges b) :
+  sum_to_inf_converges a :=
+begin
+  sorry,
+end
+
+-- Exercise 4.21
+lemma sum_to_inf_converges_iff_tail_converges {a : seq} (N : ℕ) :
+  sum_to_inf_converges (a ∘ (+ N)) ↔ sum_to_inf_converges a :=
+begin
+  sorry,
+end
+
+-- Theorem 4.19 (Comparison III)
+theorem comparison_test₃ {a b : seq} (hb : abs_convergent b) (hab : seq_converges (a / b)) :
+  abs_convergent a :=
+begin
+  sorry,
+end
+
+-- Theorem 4.22 (Alternating Series Test)
+theorem alternating_series_test {a : seq} (ha : seq_decreasing (abs ∘ a)) :
+  sum_to_inf_converges ((λ n, (-1) ^ n) * a) :=
+begin
+  sorry,
+end
+
+-- Theorem 4.23 (Ratio Test)
+theorem ratio_test {a : seq} {l : ℝ} (ha : (a ∘ (+1)) / a ⟶ l) (hl : l < 1) : abs_convergent a := begin
+  sorry,
+end
+
+-- Theorem 4.25 (Root Test)
+theorem root_test {a : seq} {r : ℝ} (ha : (λ n, abs (a n) ^ (1 / n)) ⟶ r) (hr : r < 1) : abs_convergent a := begin
+  sorry,
+end
+
+end sec_4_3
 
 end MATH40002
