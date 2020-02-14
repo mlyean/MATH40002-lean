@@ -665,6 +665,7 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) �
   cases exists_nat_gt (M / x) with N hN,
   existsi N,
   intros n hn,
+  refine le_of_lt _,
   calc
     r ^ n = (1 + x) ^ n : congr_fun (congr_arg pow hx) n
       ... ≥ 1 + n * x : bernoulli_inequality (lt_trans zero_gt_neg_one hx')

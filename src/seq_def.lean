@@ -153,8 +153,8 @@ lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_conv
 
 -- Divergence
 def seq_diverges (a : seq) := ¬ seq_converges a
-def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n > M
-def seq_diverges_to_neg_inf (a : seq) := seq_diverges_to_pos_inf (-a)
+def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n ≥ M
+def seq_diverges_to_neg_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n ≤ -M
 notation a ` ⟶+∞ ` := seq_diverges_to_pos_inf a
 notation a ` ⟶-∞ ` := seq_diverges_to_neg_inf a
 
@@ -162,6 +162,48 @@ lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0,
   unfold seq_diverges seq_converges is_limit,
   push_neg,
   simp,
+end
+
+lemma seq_diverges_to_neg_inf_iff (a : seq) : seq_diverges_to_neg_inf a ↔ seq_diverges_to_pos_inf (-a) := begin
+  refine forall_congr _,
+  intro M,
+  refine imp_congr iff.rfl (exists_congr _),
+  intro N,
+  refine forall_congr _,
+  intro n,
+  exact imp_congr iff.rfl le_neg,
+end
+
+lemma seq_diverges_of_diverges_to_pos_inf {a : seq} (ha : a ⟶+∞) : seq_diverges a := begin
+  rintro ⟨l, hl⟩,
+  cases hl 1 zero_lt_one with N₁ hN₁,
+  let l' := abs l + 1,
+  have hl' : l' > 0 := lt_of_lt_of_le zero_lt_one (le_add_of_nonneg_left (abs_nonneg l)),
+  cases ha l' hl' with N₂ hN₂,
+  let N := max N₁ N₂,
+  replace hN₁ := (abs_lt.mp (hN₁ N (le_max_left _ _))).2,
+  rw sub_lt_iff_lt_add' at hN₁,
+  replace hN₂ : a N ≥ l + 1 := calc
+    a N ≥ abs l + 1 : hN₂ N (le_max_right _ _)
+      ... ≥ l + 1 : add_le_add_right (le_abs_self l) _,
+  exact not_lt_of_ge hN₂ hN₁,
+end
+
+lemma seq_diverges_of_diverges_to_neg_inf {a : seq} (ha : a ⟶-∞) : seq_diverges a := begin
+  rintro ⟨l, hl⟩,
+  cases hl 1 zero_lt_one with N₁ hN₁,
+  let l' := abs l + 1,
+  have hl' : l' > 0 := lt_of_lt_of_le zero_lt_one (le_add_of_nonneg_left (abs_nonneg l)),
+  cases ha l' hl' with N₂ hN₂,
+  let N := max N₁ N₂,
+  replace hN₁ := (abs_lt.mp (hN₁ N (le_max_left _ _))).1,
+  rw lt_sub_iff_add_lt' at hN₁,
+  replace hN₂ : l - 1 < -abs l - 1 := calc
+    l - 1 < a N : hN₁
+      ... ≤ -(abs l + 1) : hN₂ N (le_max_right _ _)
+      ... = -abs l - 1 : neg_add _ _,
+  rw [sub_lt_sub_iff_right, lt_neg, ←abs_neg] at hN₂,
+  exact not_lt_of_le (le_abs_self (-l)) hN₂,
 end
 
 -- Monotonicity
