@@ -7,6 +7,9 @@ namespace MATH40002
 open real_seq
 open real_series
 
+-- Chapter 4 : Series
+
+-- Section 4.1 : Convergence of Series
 section sec_4_1
 
 lemma sum_of_nonneg_monotone {a : seq} (ha : a ≥ 0) : monotone (partial_sum a) := begin
@@ -108,11 +111,12 @@ lemma harmonic_series_monotone : monotone (partial_sum (λ n, 1 / (n + 1))) :=
   sum_of_nonneg_monotone (λ n, le_of_lt nat.one_div_pos_of_nat)
 
 -- Example 4.4
-theorem harmonic_series_diverges : sum_to_inf_diverges_to_pos_inf (λ n, 1 / (n + 1)) := begin
+theorem harmonic_series_diverges_to_pos_inf : ∑ (λ n, 1 / (n + 1)) ⟶+∞ := begin
   intros M hM,
   cases exists_nat_gt (2 * M) with M' hM',
   existsi 2 ^ (M' + 1),
   intros n hn,
+  refine le_of_lt _,
   calc
     partial_sum (λ n, 1 / (n + 1)) n ≥ partial_sum (λ (n : ℕ), 1 / (↑n + 1)) (2 ^ (M' + 1)) : harmonic_series_monotone hn
       ... ≥ 1 + (M' + 1) / 2 : harmonic_series_ineq (M' + 1)
@@ -277,7 +281,7 @@ begin
   exact lim_add_eq_add_lim hla hlb,
 end
 
-theorem sum_smul_eq_mul_sum {a : seq} {la c : ℝ} (hla : (∑ a ⟶ la)) :
+theorem sum_smul_eq_mul_sum {a : seq} {la : ℝ} (c : ℝ) (hla : (∑ a ⟶ la)) :
   ∑ c • a ⟶ c * la :=
 begin
   unfold sum_to_inf_eq partial_sum,
@@ -290,5 +294,29 @@ begin
 end
 
 end sec_4_1
+
+-- Section 4.2 : Absolute Convergence
+section sec_4_2
+
+-- Example 4.10
+example : ¬ abs_convergent (λ n, (-1) ^ n / (n + 1)) := begin
+  unfold abs_convergent,
+  have : abs ∘ (λ (n : ℕ), (-1 : ℝ) ^ n / (n + 1)) = λ (n : ℕ), (1 : ℝ) / (n + 1) := begin
+    funext n,
+    change abs ((-1 : ℝ) ^ n / (n + 1)) = 1 / (n + 1),
+    rw [abs_div, ←pow_abs, abs_neg, abs_one, one_pow],
+    refine congr_arg _ (abs_of_pos _),
+    norm_cast,
+    exact nat.succ_pos n,
+  end,
+  rw this,
+  exact seq_diverges_of_diverges_to_pos_inf harmonic_series_diverges_to_pos_inf,
+end
+
+example : sum_to_inf_converges (λ n, (-1) ^ n / (n + 1)) := begin
+  sorry,
+end
+
+end sec_4_2
 
 end MATH40002
