@@ -131,11 +131,7 @@ lemma partial_sum_one_div_mul_succ : partial_sum (λ n, 1 / ((n + 1) * (n + 2)))
   { unfold partial_sum,
     simp, },
   { rw [partial_sum_succ, hn, sub_add, sub_left_inj, nat.succ_eq_add_one, nat.cast_add, nat.cast_one],
-    have : (n : ℝ) + 2 ≠ 0 := begin
-      refine ne_of_gt _,
-      norm_cast,
-      norm_num,
-    end,
+    have : (n : ℝ) + 2 ≠ 0 := ne_of_gt (by { norm_cast, norm_num }),
     rw [←div_mul_left ((n : ℝ) + 1) this, ←sub_div],
     conv_lhs {
       congr,
@@ -147,11 +143,7 @@ lemma partial_sum_one_div_mul_succ : partial_sum (λ n, 1 / ((n + 1) * (n + 2)))
         rw add_sub_cancel (1 : ℝ) 1,
       }
     },
-    have : (n : ℝ) + 1 ≠ 0 := begin
-      refine ne_of_gt _,
-      norm_cast,
-      norm_num,
-    end,
+    have : (n : ℝ) + 1 ≠ 0 := ne_of_gt (nat.cast_add_one_pos n),
     rw [div_mul_right ((n : ℝ) + 2) this, add_assoc],
     refl,
   }
@@ -173,7 +165,7 @@ lemma partial_sum_one_div_pow_two : partial_sum (λ n, 1 / ((n + 1) ^ 2)) ≤ λ
     rw ←partial_sum_one_div_mul_succ,
     refine sum_le_of_terms_le _,
     intro n,
-    have hn : (n : ℝ) + 1 > 0 := by { norm_cast, norm_num },
+    have hn : (n : ℝ) + 1 > 0 := nat.cast_add_one_pos n,
     have hn' : (n : ℝ) + 2 > 0 := by { norm_cast, norm_num },
     change (1 : ℝ) / (↑n + 2) ^ 2 ≤ 1 / ((↑n + 1) * (↑n + 2)),
     rw one_div_le_one_div (pow_pos hn' 2) (mul_pos hn hn'),
@@ -209,30 +201,23 @@ lemma partial_sum_one_div_pow_two : partial_sum (λ n, 1 / ((n + 1) ^ 2)) ≤ λ
     change _ ≤ 1 - (1 : ℝ) / (↑n + 2),
     refine le_trans (h n) _,
     change (1 : ℝ) - 1 / (n + 1) ≤ 1 - 1 / (↑n + 2),
-    refine add_le_add_left _ _,
-    refine le_of_neg_le_neg _,
+    refine add_le_add_left (le_of_neg_le_neg _) _,
     rw [neg_neg, neg_neg, one_div_le_one_div],
-    repeat {
-      norm_cast,
-      norm_num,
-    },
+    repeat { norm_cast, norm_num },
   },
 end
 
 lemma sum_one_div_pow_two : sum_to_inf_converges (λ n, 1 / (n + 1) ^ 2) := begin
   refine sum_of_nonneg_converges_of_bdd_above _ _,
   { intro n,
-    change (0 : ℝ) ≤ (1 : ℝ) / (n + 1) ^ 2,
-    refine le_of_lt (one_div_pos_of_pos (pow_pos _ 2)),
-    norm_cast,
-    norm_num,
+    exact le_of_lt (one_div_pos_of_pos (pow_pos (nat.cast_add_one_pos n) 2)),
   },
   { existsi (2 : ℝ),
     rintros x ⟨y, hy⟩,
     subst hy,
     calc
       partial_sum (λ n, (1 : ℝ) / (n + 1) ^ 2) y ≤ 2 - (1 : ℝ) / (y + 1) : partial_sum_one_div_pow_two y
-        ... ≤ 2 : by { norm_num, norm_cast, norm_num, },
+        ... ≤ 2 : by { rw [sub_le, sub_self], exact le_of_lt nat.one_div_pos_of_nat },
   }
 end
 
@@ -306,8 +291,7 @@ example : ¬ abs_convergent (λ n, (-1) ^ n / (n + 1)) := begin
     change abs ((-1 : ℝ) ^ n / (n + 1)) = 1 / (n + 1),
     rw [abs_div, ←pow_abs, abs_neg, abs_one, one_pow],
     refine congr_arg _ (abs_of_pos _),
-    norm_cast,
-    exact nat.succ_pos n,
+    exact nat.cast_add_one_pos n,
   end,
   rw this,
   exact seq_diverges_of_diverges_to_pos_inf harmonic_series_diverges_to_pos_inf,
