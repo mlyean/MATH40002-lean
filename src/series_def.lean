@@ -5,6 +5,7 @@ namespace real_series
 
 open real_seq
 
+-- Sectioj 4.1 : Convergence of Series
 section sec_4_1
 
 def partial_sum (a : seq) : seq := λ n, (finset.Ico 0 n).sum a
@@ -42,5 +43,13 @@ notation `∑  ` a ` ⟶+∞` := sum_to_inf_diverges_to_pos_inf a
 notation `∑ ` a ` ⟶-∞` := sum_to_inf_diverges_to_neg_inf a
 
 end sec_4_1
+
+-- Section 4.2 : Absolute Convergence
+section sec_4_2
+
+-- Absolute convergence
+def abs_convergent (a : seq) := seq_converges (partial_sum (abs ∘ a))
+
+end sec_4_2
 
 end real_series
