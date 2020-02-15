@@ -962,7 +962,7 @@ lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j :=
 end
 
 theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
-  ∃ (n : ℕ → ℕ) (hn : strict_mono n), seq_converges (a ∘ n) :=
+  ∃ b (hb : is_subseq_of a b), seq_converges b :=
 begin
   let peak_points : set ℕ := is_peak_point a,
   cases classical.em (set.finite peak_points) with hfin hnfin,
@@ -1000,13 +1000,13 @@ end thm_3_26
 
 -- Proposition 3.28
 lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : a ⟶ l) : b ⟶ l := begin
-  rcases h with ⟨n, ⟨hn, hb⟩⟩,
-  subst hb,
+  rcases h with ⟨n, hn⟩,
+  subst hn,
   intros ε hε,
   cases hl ε hε with N hN,
   existsi N,
   intros k hk,
-  exact hN (n k) (le_trans hk (nat.ge_index_of_strict_mono hn k)),
+  exact hN (n.fst k) (le_trans hk (nat.ge_index_of_strict_mono n.snd k)),
 end
 
 -- Unseen Sheet 4: Question 4

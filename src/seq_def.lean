@@ -224,7 +224,7 @@ end sec_3_2
 section sec_3_3
 
 -- Subsequence
-def is_subseq_of (a : seq) (b : seq) := ∃ (p : ℕ → ℕ) (hp : strict_mono p), b = a ∘ p
+def is_subseq_of (a : seq) (b : seq) := ∃ (n : psigma strict_mono), b = a ∘ n.fst
 
 end sec_3_3
 
