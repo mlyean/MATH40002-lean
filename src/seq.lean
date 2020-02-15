@@ -1,6 +1,7 @@
 import seq_def
 import lemmas
 import data.set.intervals.basic
+import data.nat.parity
 
 namespace MATH40002
 
@@ -675,7 +676,7 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) �
 end
 
 -- Example 3.15
-example (a : seq) (L : ℝ) (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : (λ n, abs (a (n + 1) / a n)) ⟶ L) :
+example {a : seq} {L : ℝ} (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : (λ n, abs (a (n + 1) / a n)) ⟶ L) :
   a ⟶  0 :=
 begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
@@ -1006,6 +1007,60 @@ lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : a ⟶ l) 
   existsi N,
   intros k hk,
   exact hN (n k) (le_trans hk (nat.ge_index_of_strict_mono hn k)),
+end
+
+-- Unseen Sheet 4: Question 4
+lemma seq_converges_iff_even_and_odd_converge {a : seq} {la : ℝ} :
+  (a ⟶ la) ↔ (a ∘ (λ n, 2 * n) ⟶ la) ∧ (a ∘ (λ n, 2 * n + 1) ⟶ la) :=
+begin
+  split,
+  { intro ha,
+    split,
+    { intros ε hε,
+      cases ha ε hε with N hN,
+      existsi N,
+      intros n hn,
+      refine hN (2 * n) _,
+      rw two_mul,
+      exact le_add_right hn,
+    },
+    { intros ε hε,
+      cases ha ε hε with N hN,
+      existsi N,
+      intros n hn,
+      refine hN (2 * n + 1) _,
+      rw [two_mul, add_assoc],
+      exact le_add_right hn,
+    }
+  },
+  { rintros ⟨h_even, h_odd⟩,
+    intros ε hε,
+    cases h_even ε hε with N₁ hN₁,
+    cases h_odd ε hε with N₂ hN₂,
+    let N := max (2 * N₁) (2 * N₂ + 1),
+    existsi N,
+    intros n hn,
+    cases dec_em (nat.even n) with hn_even hn_odd,
+    { cases hn_even with k hk,
+      subst hk,
+      refine hN₁ k _,
+      refine le_of_mul_le_mul_left _ zero_lt_two,
+      exact le_trans (le_max_left _ _) hn,
+    },
+    { rw nat.not_even_iff at hn_odd,
+      have hn' := nat.mod_add_div n 2,
+      rw [hn_odd, add_comm] at hn',
+      rw ←hn',
+      refine hN₂ (n / 2) _,
+      rw ←nat.mul_div_cancel N₂ (zero_lt_two),
+      refine nat.div_le_div_right _,
+      rw mul_comm,
+      calc
+        2 * N₂ ≤ 2 * N₂ + 1 : nat.le_succ _
+          ... ≤ N : le_max_right _ _
+          ... ≤ n : hn,
+    }
+  }
 end
 
 end sec_3_3
