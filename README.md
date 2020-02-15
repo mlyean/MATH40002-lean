@@ -22,7 +22,7 @@ Some Analysis I related stuff in Lean.
     + Partial sums
     + Convergence of series
     + Absolute convergence
-- `src/series.lean` contains examples and propotitions.
+- `src/series.lean` contains examples and propositions.
     + Limit test
     + Comparison tests (WIP)
     + Alternating series test (WIP)
