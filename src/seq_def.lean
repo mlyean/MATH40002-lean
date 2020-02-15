@@ -164,7 +164,7 @@ lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0,
   simp,
 end
 
-lemma seq_diverges_to_neg_inf_iff (a : seq) : seq_diverges_to_neg_inf a ↔ seq_diverges_to_pos_inf (-a) := begin
+lemma seq_diverges_to_neg_inf_iff (a : seq) : (a ⟶-∞) ↔ ((-a) ⟶+∞) := begin
   refine forall_congr _,
   intro M,
   refine imp_congr iff.rfl (exists_congr _),

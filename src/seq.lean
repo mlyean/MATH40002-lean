@@ -962,7 +962,7 @@ lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j :=
 end
 
 theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
-  ∃ b (hb : is_subseq_of a b), seq_converges b :=
+  ∃ (b : seq) (hb : is_subseq_of a b), seq_converges b :=
 begin
   let peak_points : set ℕ := is_peak_point a,
   cases classical.em (set.finite peak_points) with hfin hnfin,
