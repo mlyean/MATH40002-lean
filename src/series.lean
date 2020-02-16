@@ -309,6 +309,12 @@ example : sum_to_inf_converges (λ n, (-1) ^ n / (n + 1)) := begin
   sorry,
 end
 
+lemma sum_to_inf_converges_iff_cauchy {a : seq} : sum_to_inf_converges a ↔ seq_cauchy (partial_sum a) :=
+begin
+  unfold sum_to_inf_converges,
+  exact converges_iff_cauchy,
+end
+
 lemma partial_sum_cauchy_iff {a : seq} :
   seq_cauchy (partial_sum a) ↔ ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ m), abs ((finset.Ico m n).sum a) < ε :=
 begin
@@ -326,11 +332,8 @@ end
 -- Theorem 4.11
 theorem convergent_of_abs_convergent {a : seq} (ha : abs_convergent a) : sum_to_inf_converges a := begin
   unfold abs_convergent at ha,
-  unfold sum_to_inf_converges,
-  rw ←cauchy_iff_converges at ha,
-  refine converges_of_cauchy _,
-  rw partial_sum_cauchy_iff at ha,
-  rw cauchy_iff,
+  rw [converges_iff_cauchy, partial_sum_cauchy_iff] at ha,
+  rw [sum_to_inf_converges_iff_cauchy, cauchy_iff],
   intros ε hε,
   cases ha ε hε with N hN,
   existsi N,
@@ -352,7 +355,27 @@ theorem comparison_test₂ {a b c : seq} (hca : c ≤ a) (hab : a ≤ b)
   (hc : sum_to_inf_converges c) (hb : sum_to_inf_converges b) :
   sum_to_inf_converges a :=
 begin
-  sorry,
+  rw [sum_to_inf_converges_iff_cauchy, partial_sum_cauchy_iff] at *,
+  intros ε hε,
+  cases hb ε hε with Nb hNb,
+  cases hc ε hε with Nc hNc,
+  let N := max Nb Nc,
+  existsi N,
+  intros m hm n hn,
+  rw abs_lt,
+  split,
+  { have : -ε < finset.sum (finset.Ico m n) c :=
+      (abs_lt.mp (hNc m (le_trans (le_max_right _ _) hm) n hn)).left,
+    refine lt_of_lt_of_le this (finset.sum_le_sum _),
+    intros k hk,
+    exact hca k,
+  },
+  { have : finset.sum (finset.Ico m n) b < ε := 
+      (abs_lt.mp (hNb m (le_trans (le_max_left _ _) hm) n hn)).right,
+    refine lt_of_le_of_lt (finset.sum_le_sum _) this,
+    intros k hk,
+    exact hab k,
+  }
 end
 
 -- Exercise 4.21
