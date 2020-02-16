@@ -1070,6 +1070,26 @@ begin
   }
 end
 
+lemma seq_not_bdd_above_iff {a : seq} :
+  ¬ seq_bdd_above a ↔ ∃ (b : seq) (hb : is_subseq_of a b), seq_diverges_to_pos_inf b :=
+begin
+  sorry,
+end
+
+lemma seq_not_bdd_below_iff {a : seq} :
+  ¬ seq_bdd_below a ↔ ∃ (b : seq) (hb : is_subseq_of a b), seq_diverges_to_neg_inf b :=
+begin
+  sorry,
+end
+
+-- Problem Sheet 5: Question 5
+lemma subseq_trichotomy {a : seq} :
+  ∃ (b : seq) (hb : is_subseq_of a b), seq_converges b ∨ seq_diverges_to_pos_inf b ∨ seq_diverges_to_neg_inf b :=
+begin
+  sorry,
+end
+
+
 end sec_3_3
 
 end MATH40002
