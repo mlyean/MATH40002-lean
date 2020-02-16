@@ -144,6 +144,23 @@ lemma seq_bdd_below_of_bdd {a : seq} (h : seq_bdd a) : seq_bdd_below a := begin
   exact (abs_le.mp (hA' n)).left,
 end
 
+lemma seq_bdd_iff {a : seq} : seq_bdd a ↔ seq_bdd_above a ∧ seq_bdd_below a := begin
+  split,
+  { intro ha,
+    exact ⟨seq_bdd_above_of_bdd ha, seq_bdd_below_of_bdd ha⟩,
+  },
+  { rw [seq_bdd_above_iff, seq_bdd_below_iff],
+    rintro ⟨⟨A₁, hA₁, hA₁'⟩, ⟨A₂, hA₂, hA₂'⟩⟩,
+    let A := max A₁ A₂,
+    existsi [A, lt_of_lt_of_le hA₁ (le_max_left _ _)],
+    intro n,
+    rw abs_le,
+    split,
+    { exact le_trans (neg_le_neg (le_max_right _ _)) (hA₂' n) },
+    { exact le_trans (hA₁' n) (le_max_left _ _) }
+  }
+end
+
 -- Limits
 def is_limit (a : seq) (l : ℝ) := ∀ ε > 0, ∃ N, ∀ n ≥ N, abs ((a n) - l) < ε
 notation a ` ⟶ ` l := is_limit a l
