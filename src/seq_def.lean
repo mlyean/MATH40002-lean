@@ -47,13 +47,14 @@ protected lemma one_mul : 1 * a = a := funext (λ n, one_mul (a n))
 protected lemma mul_one : a * 1 = a := funext (λ n, mul_one (a n))
 protected lemma left_distrib : a * (b + c) = a * b + a * c := funext (λ n, left_distrib _ _ _)
 protected lemma right_distrib : (a + b) * c = a * c + b * c := funext (λ n, right_distrib _ _ _)
+protected lemma mul_comm : a * b = b * a := funext (λ n, mul_comm _ _)
 protected lemma le_refl : a ≤ a := λ n, le_refl (a n)
 protected lemma le_trans : a ≤ b → b ≤ c → a ≤ c := λ h₁ h₂ n, le_trans (h₁ n) (h₂ n)
 protected lemma le_antisymm : a ≤ b → b ≤ a → a = b := λ h₁ h₂, funext (λ n, le_antisymm (h₁ n) (h₂ n))
 
 end props
 
-instance : ring seq := {
+instance : comm_ring seq := {
   add := real_seq.has_add.add,
   add_assoc := real_seq.add_assoc,
   zero := real_seq.has_zero.zero,
@@ -69,6 +70,7 @@ instance : ring seq := {
   mul_one := real_seq.mul_one,
   left_distrib := real_seq.left_distrib,
   right_distrib := real_seq.right_distrib,
+  mul_comm := real_seq.mul_comm,
 }
 
 instance : partial_order seq := {
@@ -153,57 +155,71 @@ lemma seq_converges_of_has_limit {a : seq} {l : ℝ} : is_limit a l → seq_conv
 
 -- Divergence
 def seq_diverges (a : seq) := ¬ seq_converges a
-def seq_diverges_to_pos_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n ≥ M
-def seq_diverges_to_neg_inf (a : seq) := ∀ M > 0, ∃ N, ∀ n ≥ N, a n ≤ -M
+def seq_diverges_to_pos_inf (a : seq) := ∀ M, ∃ N, ∀ n ≥ N, a n ≥ M
+def seq_diverges_to_neg_inf (a : seq) := ∀ M, ∃ N, ∀ n ≥ N, a n ≤ M
 notation a ` ⟶+∞ ` := seq_diverges_to_pos_inf a
 notation a ` ⟶-∞ ` := seq_diverges_to_neg_inf a
 
 lemma seq_diverges_iff {a : seq} : seq_diverges a ↔ ∀ (l : ℝ), ∃ ε > 0, ∀ N, ∃ n ≥ N, abs ((a n) - l) ≥ ε := begin
   unfold seq_diverges seq_converges is_limit,
   push_neg,
-  simp,
+  simp only [exists_prop, gt_iff_lt, iff_self, ge_iff_le, sub_eq_add_neg],
 end
 
 lemma seq_diverges_to_neg_inf_iff (a : seq) : (a ⟶-∞) ↔ ((-a) ⟶+∞) := begin
-  refine forall_congr _,
-  intro M,
-  refine imp_congr iff.rfl (exists_congr _),
-  intro N,
-  refine forall_congr _,
-  intro n,
-  exact imp_congr iff.rfl le_neg,
+  split,
+  { intros ha M,
+    cases ha (-M) with N hN,
+    existsi N,
+    intros n hn,
+    exact le_neg_of_le_neg (hN n hn),
+  },
+  { intros ha M,
+    cases ha (-M) with N hN,
+    existsi N,
+    intros n hn,
+    exact le_of_neg_le_neg (hN n hn),
+  }
 end
 
 lemma seq_diverges_of_diverges_to_pos_inf {a : seq} (ha : a ⟶+∞) : seq_diverges a := begin
   rintro ⟨l, hl⟩,
   cases hl 1 zero_lt_one with N₁ hN₁,
-  let l' := abs l + 1,
-  have hl' : l' > 0 := lt_of_lt_of_le zero_lt_one (le_add_of_nonneg_left (abs_nonneg l)),
-  cases ha l' hl' with N₂ hN₂,
+  cases ha (l + 1) with N₂ hN₂,
   let N := max N₁ N₂,
-  replace hN₁ := (abs_lt.mp (hN₁ N (le_max_left _ _))).2,
-  rw sub_lt_iff_lt_add' at hN₁,
-  replace hN₂ : a N ≥ l + 1 := calc
-    a N ≥ abs l + 1 : hN₂ N (le_max_right _ _)
-      ... ≥ l + 1 : add_le_add_right (le_abs_self l) _,
-  exact not_lt_of_ge hN₂ hN₁,
+  refine not_lt_of_ge (hN₂ N (le_max_right _ _)) _,
+  rw ←sub_lt_iff_lt_add',
+  exact (abs_lt.mp (hN₁ N (le_max_left _ _))).right,
 end
 
 lemma seq_diverges_of_diverges_to_neg_inf {a : seq} (ha : a ⟶-∞) : seq_diverges a := begin
   rintro ⟨l, hl⟩,
   cases hl 1 zero_lt_one with N₁ hN₁,
-  let l' := abs l + 1,
-  have hl' : l' > 0 := lt_of_lt_of_le zero_lt_one (le_add_of_nonneg_left (abs_nonneg l)),
-  cases ha l' hl' with N₂ hN₂,
+  cases ha (l - 1) with N₂ hN₂,
   let N := max N₁ N₂,
-  replace hN₁ := (abs_lt.mp (hN₁ N (le_max_left _ _))).1,
-  rw lt_sub_iff_add_lt' at hN₁,
-  replace hN₂ : l - 1 < -abs l - 1 := calc
-    l - 1 < a N : hN₁
-      ... ≤ -(abs l + 1) : hN₂ N (le_max_right _ _)
-      ... = -abs l - 1 : neg_add _ _,
-  rw [sub_lt_sub_iff_right, lt_neg, ←abs_neg] at hN₂,
-  exact not_lt_of_le (le_abs_self (-l)) hN₂,
+  refine not_lt_of_le (hN₂ N (le_max_right _ _)) _,
+  rw [sub_lt_iff_lt_add, ←neg_lt_sub_iff_lt_add],
+  exact (abs_lt.mp (hN₁ N (le_max_left _ _))).left,
+end
+
+lemma seq_not_bdd_above_of_diverges_to_pos_inf {a : seq} (ha : a ⟶+∞) : ¬ seq_bdd_above a := begin
+  rintro ⟨M, hM⟩,
+  cases ha (M + 1) with N hN,
+  have h₁ : a N ≤ M := hM (set.mem_range_self N),
+  have h₂ : a N > M := calc
+    a N ≥ M + 1 : hN N (le_refl N)
+      ... > M : lt_add_one M,
+  exact not_lt_of_le h₁ h₂,
+end
+
+lemma seq_not_bdd_below_of_diverges_to_neg_inf {a : seq} (ha : a ⟶-∞) : ¬ seq_bdd_below a := begin
+  rintro ⟨M, hM⟩,
+  cases ha (M - 1) with N hN,
+  have h₁ : a N ≥ M := hM (set.mem_range_self N),
+  have h₂ : a N < M := calc
+    a N ≤ M - 1 : hN N (le_refl N)
+      ... < M : sub_one_lt M,
+  exact not_lt_of_le h₁ h₂,
 end
 
 -- Monotonicity

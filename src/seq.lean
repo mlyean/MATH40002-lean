@@ -382,9 +382,9 @@ lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ (a ∘ 
     intros n hn,
     cases nat.le.dest hn with m hm,
     rw add_right_comm at hm,
-    replace hN := hN (N + m) (nat.le_add_right N m),
-    change abs (a (N + m + k) - la) < ε at hN,
-    rwa hm at hN,
+    have := hN (N + m) (nat.le_add_right N m),
+    change abs (a (N + m + k) - la) < ε at this,
+    rwa hm at this,
   },
 end
 
@@ -395,16 +395,16 @@ lemma lim_abs_eq_zero_iff {a : seq} : (abs ∘ a ⟶ 0) ↔ (a ⟶ 0) := begin
     existsi N,
     intros n hn,
     rw sub_zero,
-    replace hN := hN n hn,
-    rwa [sub_zero, abs_abs] at hN,
+    have := hN n hn,
+    rwa [sub_zero, abs_abs] at this,
   },
   { intros hla ε hε,
     cases hla ε hε with N hN,
     existsi N,
     intros n hn,
     rw [sub_zero, abs_abs],
-    replace hN := hN n hn,
-    rwa sub_zero at hN,
+    have := hN n hn,
+    rwa sub_zero at this,
   }
 end
 
@@ -494,15 +494,24 @@ theorem seq_converges_of_bdd_decreasing {a : seq} (ha : seq_decreasing a) (ha' :
   seq_converges a := seq_converges_of_has_limit (lim_of_bdd_decreaing_seq ha ha')
 
 -- Example 3.14 (Order limit theorem)
+lemma lim_of_nonneg_nonneg {a : seq} {la : ℝ} (ha : 0 ≤ a) (hla : a ⟶ la) : 0 ≤ la := begin
+  by_contradiction h,
+  rw [not_le, ←neg_pos] at h,
+  cases hla (-la) h with N hN,
+  have := lt_of_le_of_lt (le_abs_self _) (hN N (le_refl N)),
+  erw add_lt_iff_neg_right at this,
+  exact not_le_of_lt this (ha N),
+end
+
 theorem lim_le_of_seq_le {a b : seq} {la lb : ℝ} (hab : a ≤ b) (hla : a ⟶ la) (hlb : b ⟶ lb) :
   la ≤ lb :=
 begin
   by_contradiction h,
   rw [not_le, ←sub_pos] at h,
   cases lim_sub_eq_sub_lim hla hlb (la - lb) h with N hN,
-  replace hN := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
-  erw [←sub_pos, sub_neg_eq_add, add_eq_of_eq_sub' rfl, sub_pos ] at hN,
-  exact lt_irrefl _ (lt_of_lt_of_le hN (hab N)),
+  have := lt_of_le_of_lt (neg_le_abs_self _) (hN N (le_refl N)),
+  erw [←sub_pos, sub_neg_eq_add, add_eq_of_eq_sub' rfl, sub_pos] at this,
+  exact lt_irrefl _ (lt_of_lt_of_le this (hab N)),
 end
 
 theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : a ≥ 0) (hla : a ⟶ la) :
@@ -590,6 +599,8 @@ lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1
   }
 end
 
+section specific_limits
+
 lemma lim_of_geom_zero_aux {x : ℝ} (hx : x > 0) : (λ n, 1 / (1 + x) ^ n) ⟶ 0 := begin
   intros ε hε,
   cases exists_nat_gt (1 / (ε * x)) with N hN,
@@ -633,14 +644,10 @@ end
 lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (λ n, r ^ n) ⟶ 0 := begin
   cases decidable.em (r = 0) with h h,
   { rw lim_eq_lim_of_tail 1,
+    subst h,
     dsimp only [function.comp],
-    conv {
-      congr,
-      { funext,
-        rw [h, zero_pow (nat.succ_pos x)],
-      }
-    },
-    exact lim_of_const_seq,
+    simp only [zero_pow (nat.succ_pos _)],
+    exact lim_of_zero,
   },
   { replace h := abs_pos_of_ne_zero h,
     rw [set.mem_Ioo, ←abs_lt] at hr,
@@ -662,7 +669,7 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) �
   rw set.mem_Ioi at hr,
   have hx : r = 1 + x := by { dsimp only [x], exact (add_eq_of_eq_sub' rfl).symm, },
   have hx' : x > 0 := sub_pos_of_lt hr,
-  intros M hM,
+  intros M,
   cases exists_nat_gt (M / x) with N hN,
   existsi N,
   intros n hn,
@@ -674,6 +681,8 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) �
       ... ≥ N * x : by { rw [ge_iff_le, mul_le_mul_right hx'], exact nat.cast_le.mpr hn }
       ... > M : (div_lt_iff hx').mp hN,
 end
+
+end specific_limits
 
 -- Example 3.15
 example {a : seq} {L : ℝ} (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : (λ n, abs (a (n + 1) / a n)) ⟶ L) :
@@ -706,8 +715,8 @@ begin
         abs (a (N + k + 1)) ≤ L' * abs (a (N + k)) : by {
             rw [←div_le_iff (abs_pos_of_ne_zero (ha (N + k))), ←abs_div],
             refine le_of_lt _,
-            have h : L' = (1 - L) / 2 + L := by { dsimp only [L'], ring, },
-            rw [h, ←sub_lt_iff_lt_add],
+            have : L' = (1 - L) / 2 + L := by { dsimp only [L'], ring, },
+            rw [this, ←sub_lt_iff_lt_add],
             exact lt_of_le_of_lt (le_abs_self _) (hN (N + k) (nat.le_add_right N k)),
           }
           ... ≤ L' * (L' ^ k * abs (a N)) : by rwa mul_le_mul_left hL'_bd.1
@@ -786,11 +795,9 @@ lemma bdd_of_cauchy {a : seq} : seq_cauchy a → seq_bdd a := begin
   }
 end
 
-lemma bdd_above_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_above a :=
-  λ ha, seq_bdd_above_of_bdd $ bdd_of_cauchy ha
+lemma bdd_above_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_above a := seq_bdd_above_of_bdd ∘ bdd_of_cauchy
 
-lemma bdd_below_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_below a :=
-  λ ha, seq_bdd_below_of_bdd $ bdd_of_cauchy ha
+lemma bdd_below_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_below a := seq_bdd_below_of_bdd ∘ bdd_of_cauchy
 
 -- Some lemmas for Theorem 3.19
 lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_above (a ∘ (+ k)) := 
