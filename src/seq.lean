@@ -951,7 +951,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
 end
 
 -- Corollary 3.20
-theorem cauchy_iff_converges {a : seq} : seq_cauchy a ↔ seq_converges a := ⟨converges_of_cauchy, cauchy_of_converges⟩
+theorem converges_iff_cauchy {a : seq} : seq_converges a ↔ seq_cauchy a := ⟨cauchy_of_converges, converges_of_cauchy⟩
 
 -- Exercise 3.22
 example (M : ℝ) (S : set ℝ) (hS : S.nonempty) (hM : ∀ x ∈ S, x < M) : real.Sup S ≤ M := begin
