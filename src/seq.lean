@@ -669,7 +669,7 @@ lemma lim_of_geom_inf {r : ℝ} (hr : r ∈ set.Ioi (1 : ℝ)) : (λ n, r ^ n) �
   rw set.mem_Ioi at hr,
   have hx : r = 1 + x := by { dsimp only [x], exact (add_eq_of_eq_sub' rfl).symm, },
   have hx' : x > 0 := sub_pos_of_lt hr,
-  intros M,
+  intro M,
   cases exists_nat_gt (M / x) with N hN,
   existsi N,
   intros n hn,
@@ -686,7 +686,7 @@ end specific_limits
 
 -- Example 3.15
 example {a : seq} {L : ℝ} (ha : ∀ n, a n ≠ 0) (hL_lt_one : L < 1) (hL : (λ n, abs (a (n + 1) / a n)) ⟶ L) :
-  a ⟶  0 :=
+  a ⟶ 0 :=
 begin
   have hL_bd : L ∈ set.Ico (0 : ℝ) (1 : ℝ) := begin
     refine ⟨lim_le_of_seq_le _ lim_of_const_seq hL, hL_lt_one⟩,

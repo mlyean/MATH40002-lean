@@ -112,7 +112,7 @@ lemma harmonic_series_monotone : monotone (partial_sum (λ n, 1 / (n + 1))) :=
 
 -- Example 4.4
 theorem harmonic_series_diverges_to_pos_inf : ∑ (λ n, 1 / (n + 1)) ⟶+∞ := begin
-  intros M,
+  intro M,
   cases exists_nat_gt (2 * M) with M' hM',
   existsi 2 ^ (M' + 1),
   intros n hn,
