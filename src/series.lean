@@ -382,11 +382,24 @@ end
 lemma sum_to_inf_converges_iff_tail_converges {a : seq} (N : ℕ) :
   sum_to_inf_converges (a ∘ (+ N)) ↔ sum_to_inf_converges a :=
 begin
+  unfold sum_to_inf_converges,
+  conv_rhs {
+    rw seq_converges_iff_tail_converges N,
+  },
+  have : (partial_sum a) ∘ (+ N) = λ n, (partial_sum a N) + (partial_sum (a ∘ (+ N)) n) := begin
+    funext n,
+    unfold partial_sum function.comp,
+    simp only [add_comm],
+    rw [finset.sum_Ico_add, zero_add, add_comm],
+    symmetry,
+    exact finset.sum_Ico_consecutive _ (zero_le N) (nat.le_add_left N n),
+  end,
+  rw this,
   sorry,
 end
 
 -- Theorem 4.19 (Comparison III)
-theorem comparison_test₃ {a b : seq} (hb : abs_convergent b) (hab : seq_converges (a / b)) :
+theorem comparison_test₃ {a b : seq} (hb : abs_convergent b) (hb' : ∀ n, b n ≠ 0) (hab : seq_converges (a / b)) :
   abs_convergent a :=
 begin
   sorry,

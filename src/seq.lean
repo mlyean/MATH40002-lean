@@ -388,6 +388,9 @@ lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ (a ∘ 
   },
 end
 
+lemma seq_converges_iff_tail_converges {a : seq} (k : ℕ) : seq_converges a ↔ seq_converges (a ∘ (+ k)) :=
+  exists_congr (λ l, lim_eq_lim_of_tail k)
+
 lemma lim_abs_eq_zero_iff {a : seq} : (abs ∘ a ⟶ 0) ↔ (a ⟶ 0) := begin
   split,
   { intros hla ε hε,
@@ -931,8 +934,8 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     rwa sub_lt_iff_lt_add' at this,
   },
   { rw sub_le,
-    have h : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
-    rw h,
+    have : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
+    rw this,
     refine (real.le_Inf (set.range (b ∘ (+ N))) _ _).mpr _,
     show ∃ x, x ∈ set.range (b ∘ (+ N)), from set.range_nonempty (b ∘ (+ N)),
     show seq_bdd_below (b ∘ (+ N)), from bdd_below_of_tail N hb_bdd_below,
