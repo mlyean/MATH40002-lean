@@ -751,18 +751,14 @@ section sec_3_2
 
 lemma cauchy_iff {a : seq} : seq_cauchy a ↔ ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ m), abs (a n - a m) < ε :=
 begin
-  refine forall_congr _,
-  intro ε,
+  refine forall_congr (λ ε, _),
   refine imp_congr iff.rfl _,
-  refine exists_congr _,
-  intro N,
+  refine exists_congr (λ N, _),
   split,
-  { intro h,
-    intros m hm n hn,
+  { intros h m hm n hn,
     refine h m hm n (le_trans hm hn),
   },
-  { intro h,
-    intros m hm n hn,
+  { intros h m hm n hn,
     cases le_or_gt m n with hmn hmn,
     { exact h m hm n hmn },
     { rw abs_sub,
