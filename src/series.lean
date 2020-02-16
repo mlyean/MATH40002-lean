@@ -309,9 +309,37 @@ example : sum_to_inf_converges (λ n, (-1) ^ n / (n + 1)) := begin
   sorry,
 end
 
+lemma partial_sum_cauchy_iff {a : seq} :
+  seq_cauchy (partial_sum a) ↔ ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ m), abs ((finset.Ico m n).sum a) < ε :=
+begin
+  rw cauchy_iff,
+  refine forall_congr (λ ε, _),
+  refine imp_congr iff.rfl _,
+  refine exists_congr (λ N, _),
+  refine forall_congr (λ m, _),
+  refine imp_congr iff.rfl _,
+  refine forall_congr (λ n, _),
+  refine forall_congr (λ hmn, _),
+  rwa partial_sum_sub hmn,
+end
+
 -- Theorem 4.11
 theorem convergent_of_abs_convergent {a : seq} (ha : abs_convergent a) : sum_to_inf_converges a := begin
-  sorry,
+  unfold abs_convergent at ha,
+  unfold sum_to_inf_converges,
+  rw ←cauchy_iff_converges at ha,
+  refine converges_of_cauchy _,
+  rw partial_sum_cauchy_iff at ha,
+  rw cauchy_iff,
+  intros ε hε,
+  cases ha ε hε with N hN,
+  existsi N,
+  intros m hm n hn,
+  rw partial_sum_sub hn,
+  calc
+    abs (finset.sum (finset.Ico m n) a) ≤ finset.sum (finset.Ico m n) (abs ∘ a) : finset.abs_sum_le_sum_abs
+      ... ≤ abs (finset.sum (finset.Ico m n) (abs ∘ a)) : le_abs_self _
+      ... < ε : hN m hm n hn,
 end
 
 end sec_4_2

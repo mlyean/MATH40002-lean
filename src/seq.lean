@@ -749,6 +749,28 @@ end sec_3_1
 -- Section 3.2 : Cauchy Sequences
 section sec_3_2
 
+lemma cauchy_iff {a : seq} : seq_cauchy a ↔ ∀ ε > 0, ∃ N, ∀ (m ≥ N) (n ≥ m), abs (a n - a m) < ε :=
+begin
+  refine forall_congr _,
+  intro ε,
+  refine imp_congr iff.rfl _,
+  refine exists_congr _,
+  intro N,
+  split,
+  { intro h,
+    intros m hm n hn,
+    refine h m hm n (le_trans hm hn),
+  },
+  { intro h,
+    intros m hm n hn,
+    cases le_or_gt m n with hmn hmn,
+    { exact h m hm n hmn },
+    { rw abs_sub,
+      exact h n hn m (le_of_lt hmn), 
+    }
+  }
+end
+
 -- Proposition 3.17
 lemma cauchy_of_converges {a : seq} : seq_converges a → seq_cauchy a := begin
   rintros ⟨l, hl⟩ ε hε,

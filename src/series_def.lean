@@ -31,6 +31,14 @@ end
 lemma partial_sum_succ_sub (a : seq) (n : ℕ) : partial_sum a (n + 1) - partial_sum a n = a n := 
   sub_eq_iff_eq_add'.mpr partial_sum_succ
 
+lemma partial_sum_sub {a : seq} {m n : ℕ} (hmn : m ≤ n) : partial_sum a n - partial_sum a m = (finset.Ico m n).sum a :=
+begin
+  unfold partial_sum,
+  rw sub_eq_iff_eq_add',
+  symmetry,
+  exact finset.sum_Ico_consecutive a (zero_le m) hmn,
+end
+
 def sum_to_inf_eq (a : seq) := is_limit (partial_sum a)
 notation `∑ ` a ` ⟶ ` l := sum_to_inf_eq a l
 
