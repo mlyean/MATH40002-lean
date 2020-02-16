@@ -236,8 +236,16 @@ lemma sum_of_nonneg_diverges_iff_not_bdd_above {a : seq} (ha : a ≥ 0) :
   sum_to_inf_diverges_to_pos_inf a ↔ ¬ seq_bdd_above (partial_sum a) :=
 begin
   split,
-  { sorry, },
-  { sorry, }
+  { exact seq_not_bdd_above_of_diverges_to_pos_inf },
+  { intros ha' M,
+    change ¬ ∃ x, ∀ y ∈ set.range (partial_sum a), y ≤ x at ha',
+    push_neg at ha',
+    rcases ha' M with ⟨y, ⟨⟨N, hN⟩, hM⟩⟩,
+    subst hN,
+    existsi N,
+    intros n hn,
+    exact le_of_lt (lt_of_lt_of_le hM (sum_of_nonneg_monotone ha hn)),
+  }
 end
 
 -- Theorem 4.7 (Comparison Test)
@@ -334,7 +342,7 @@ begin
 end
 
 -- Theorem 4.22 (Alternating Series Test)
-theorem alternating_series_test {a : seq} (ha : seq_decreasing (abs ∘ a)) :
+theorem alternating_series_test {a : seq} (ha : seq_decreasing a) (ha' : a ⟶ 0) :
   sum_to_inf_converges ((λ n, (-1) ^ n) * a) :=
 begin
   sorry,
