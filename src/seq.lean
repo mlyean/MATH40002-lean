@@ -18,8 +18,8 @@ lemma lim_of_const_seq {a : ℝ} : const_seq a ⟶ a := begin
   intros ε hε,
   existsi 0,
   intros n Hn,
-  unfold const_seq,
-  rwa [sub_self, abs_zero],
+  erw [sub_self, abs_zero],
+  exact hε,
 end
 
 lemma lim_of_zero : 0 ⟶ 0 := @lim_of_const_seq 0
@@ -1076,9 +1076,9 @@ begin
       exact le_trans (le_max_left _ _) hn,
     },
     { rw nat.not_even_iff at hn_odd,
-      have hn' := nat.mod_add_div n 2,
-      rw [hn_odd, add_comm] at hn',
-      rw ←hn',
+      have := nat.mod_add_div n 2,
+      rw [hn_odd, add_comm] at this,
+      rw ←this,
       refine hN₂ (n / 2) _,
       rw ←nat.mul_div_cancel N₂ (zero_lt_two),
       refine nat.div_le_div_right _,
@@ -1094,22 +1094,71 @@ end
 lemma seq_not_bdd_above_iff {a : seq} :
   ¬ seq_bdd_above a ↔ ∃ (b : seq) (hb : is_subseq_of a b), seq_diverges_to_pos_inf b :=
 begin
-  sorry,
+  split,
+  { intro h,
+    sorry,
+  },
+  { rintros ⟨b, ⟨⟨p, hp⟩, hb⟩⟩,
+    subst hp,
+    change ¬ ∃ x, ∀ y ∈ set.range a, y ≤ x,
+    push_neg,
+    intro x,
+    cases hb (x + 1) with N hN,
+    existsi a (p.fst N),
+    split,
+    { exact set.mem_range_self (p.fst N) },
+    { exact lt_of_lt_of_le (lt_add_one x) (hN N (le_refl N)) }
+  }
 end
 
 lemma seq_not_bdd_below_iff {a : seq} :
   ¬ seq_bdd_below a ↔ ∃ (b : seq) (hb : is_subseq_of a b), seq_diverges_to_neg_inf b :=
 begin
-  sorry,
+  split,
+  { intro h,
+    sorry,
+  },
+  { rintros ⟨b, ⟨⟨p, hp⟩, hb⟩⟩,
+    subst hp,
+    change ¬ ∃ x, ∀ y ∈ set.range a, y ≥ x,
+    push_neg,
+    intro x,
+    cases hb (x - 1) with N hN,
+    existsi a (p.fst N),
+    split,
+    { exact set.mem_range_self (p.fst N) },
+    { exact lt_of_le_of_lt (hN N (le_refl N)) (sub_one_lt x) }
+  }
 end
 
 -- Problem Sheet 5: Question 5
 lemma subseq_trichotomy {a : seq} :
   ∃ (b : seq) (hb : is_subseq_of a b), seq_converges b ∨ seq_diverges_to_pos_inf b ∨ seq_diverges_to_neg_inf b :=
 begin
-  sorry,
+  cases classical.em (seq_bdd a) with ha ha,
+  { rcases exists_convergent_subseq_of_bdd a ha with ⟨b, ⟨hb, hb'⟩⟩,
+    existsi [b, hb],
+    left,
+    exact hb',
+  },
+  { rw [seq_bdd_iff, classical.not_and_distrib] at ha,
+    cases ha with ha ha,
+    { rw seq_not_bdd_above_iff at ha,
+      rcases ha with ⟨b, ⟨hb, hb'⟩⟩,
+      existsi [b, hb],
+      right,
+      left,
+      exact hb',
+    },
+    { rw seq_not_bdd_below_iff at ha,
+      rcases ha with ⟨b, ⟨hb, hb'⟩⟩,
+      existsi [b, hb],
+      right,
+      right,
+      exact hb',
+    }
+  }
 end
-
 
 end sec_3_3
 
