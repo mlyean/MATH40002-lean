@@ -993,6 +993,7 @@ theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
   ∃ (b : seq) (hb : is_subseq_of a b), seq_converges b :=
 begin
   let peak_points : set ℕ := is_peak_point a,
+  rw seq_bdd_iff at ha,
   cases classical.em (set.finite peak_points) with hfin hnfin,
   { let m := option.iget hfin.to_finset.max,
     have hm : ∀ k > m, ¬is_peak_point a k := begin
@@ -1025,8 +1026,7 @@ begin
       refl,
     end,
     existsi [b, hb'],
-    refine seq_converges_of_bdd_increasing hb (seq_bdd_above_of_bdd _),
-    sorry,
+    exact seq_converges_of_bdd_increasing hb (bdd_above_of_subseq ha.1 hb'),
   },
   { change set.infinite peak_points at hnfin,
     let n : ℕ → ℕ := sorry,
@@ -1038,8 +1038,7 @@ begin
       refl,
     end,
     existsi [b, hb'],
-    refine seq_converges_of_bdd_decreasing hb (seq_bdd_below_of_bdd _),
-    sorry,
+    exact seq_converges_of_bdd_decreasing hb (bdd_below_of_subseq ha.2 hb'),
   },
 end
 
