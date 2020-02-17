@@ -1001,9 +1001,9 @@ begin
       change k ∈ peak_points at hk',
       cases h : hfin.to_finset.max with x,
       { rw finset.max_eq_none at h,
-        have : k ∈ set.finite.to_finset hfin := set.finite.mem_to_finset.mpr hk',
-        rw h at this,
-        exact finset.not_mem_empty k this,
+        refine finset.not_mem_empty k _,
+        rw ←h,
+        exact set.finite.mem_to_finset.mpr hk',
       },
       { have : m = option.iget hfin.to_finset.max := rfl,
         rw [h, option.iget_some] at this,
@@ -1053,6 +1053,16 @@ lemma lim_of_subseq {a b : seq} {l : ℝ} (h : is_subseq_of a b) (hl : a ⟶ l) 
   existsi N,
   intros k hk,
   exact hN (n.fst k) (le_trans hk (nat.ge_index_of_strict_mono n.snd k)),
+end
+
+lemma diveregs_of_distinct_limits {a b c : seq} {lb lc : ℝ} (hb : is_subseq_of a b)
+  (hlb : b ⟶ lb) (hc : is_subseq_of a c) (hlc : c ⟶ lc) (hbc : lb ≠ lc) : seq_diverges a :=
+begin
+  rintro ⟨la, hla⟩,
+  have hlb' := limit_unique hlb (lim_of_subseq hb hla),
+  have hlc' := limit_unique hlc (lim_of_subseq hc hla),
+  refine hbc _,
+  rw [hlb', hlc'],
 end
 
 -- Unseen Sheet 4: Question 4
