@@ -259,6 +259,25 @@ section sec_3_3
 -- Subsequence
 def is_subseq_of (a : seq) (b : seq) := ∃ (n : psigma strict_mono), b = a ∘ n.fst
 
+def bdd_above_of_subseq {a b : seq} (ha : seq_bdd_above a) (hb : is_subseq_of a b) : seq_bdd_above b := begin
+  refine bdd_above_subset _ ha,
+  cases hb with n hn,
+  subst hn,
+  exact set.range_comp_subset_range (n.fst) a,
+end
+
+def bdd_below_of_subseq {a b : seq} (ha : seq_bdd_below a) (hb : is_subseq_of a b) : seq_bdd_below b := begin
+  refine bdd_below_subset _ ha,
+  cases hb with n hn,
+  subst hn,
+  exact set.range_comp_subset_range (n.fst) a,
+end
+
+def bdd_of_subseq {a b : seq} (ha : seq_bdd a) (hb : is_subseq_of a b) : seq_bdd b := begin
+  rw seq_bdd_iff at *,
+  exact ⟨bdd_above_of_subseq ha.left hb, bdd_below_of_subseq ha.right hb⟩,
+end
+
 end sec_3_3
 
 end real_seq
