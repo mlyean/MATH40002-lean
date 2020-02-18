@@ -352,6 +352,21 @@ end
 
 end algebra_of_limits
 
+lemma seq_converges_iff_add_converges {a : seq} {c : ℝ} : seq_converges (a + (const_seq c)) ↔ seq_converges a := begin
+  split,
+  { rintro ⟨l, hl⟩,
+    rw [←add_zero a, ←sub_self (const_seq c), add_sub],
+    existsi l - c,
+    exact lim_sub_eq_sub_lim hl lim_of_const_seq,
+  },
+  { rintro ⟨l, hl⟩,
+    existsi l + c,
+    exact lim_add_eq_add_lim hl lim_of_const_seq,
+  }
+end
+
+section specific_limits
+
 lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 := begin
   have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
     intro n,
@@ -367,6 +382,8 @@ lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 :
   },
   exact lim_mul_eq_mul_lim lim_of_reciprocal (lim_pow_eq_pow_lim lim_of_reciprocal),
 end
+
+end specific_limits
 
 lemma lim_eq_lim_of_tail {a : seq} {la : ℝ} (k : ℕ) : (a ⟶ la) ↔ (a ∘ (+ k) ⟶ la) := begin
   split,

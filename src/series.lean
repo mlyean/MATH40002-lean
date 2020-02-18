@@ -395,7 +395,12 @@ begin
     exact finset.sum_Ico_consecutive _ (zero_le N) (nat.le_add_left N n),
   end,
   rw this,
-  sorry,
+  conv_rhs {
+    congr,
+    change const_seq (partial_sum a N) + partial_sum (a ∘ (+ N)),
+    rw add_comm,
+  },
+  exact seq_converges_iff_add_converges.symm,
 end
 
 -- Theorem 4.19 (Comparison III)
