@@ -365,6 +365,21 @@ lemma seq_converges_iff_add_converges {a : seq} {c : ℝ} : seq_converges (a + (
   }
 end
 
+lemma seq_converges_iff_smul_converges {a : seq} {c : ℝ} (hc : c ≠ 0) : seq_converges (c • a) ↔ seq_converges a := begin
+  split,
+  { rintro ⟨l, hl⟩,
+    rw [←one_smul ℝ a, ←one_div_mul_cancel hc, mul_smul],
+    existsi (1 / c) * l,
+    exact lim_smul_eq_mul_lim (1 / c) hl,
+  },
+  { rintro ⟨l, hl⟩,
+    existsi c * l,
+    exact lim_smul_eq_mul_lim c hl,
+  }
+end
+
+#check one_div_mul_cancel
+
 section specific_limits
 
 lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 := begin
