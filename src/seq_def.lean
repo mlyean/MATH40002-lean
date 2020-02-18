@@ -51,6 +51,8 @@ protected lemma mul_comm : a * b = b * a := funext (λ n, mul_comm _ _)
 protected lemma le_refl : a ≤ a := λ n, le_refl (a n)
 protected lemma le_trans : a ≤ b → b ≤ c → a ≤ c := λ h₁ h₂ n, le_trans (h₁ n) (h₂ n)
 protected lemma le_antisymm : a ≤ b → b ≤ a → a = b := λ h₁ h₂, funext (λ n, le_antisymm (h₁ n) (h₂ n))
+protected lemma one_smul : (1 : ℝ) • a = a := funext (λ n, one_mul _)
+protected lemma mul_smul (x y : ℝ) (a : seq) : (x * y) • a = x • y • a := funext (λ n, mul_assoc _ _ _)
 
 end props
 
@@ -78,6 +80,11 @@ instance : partial_order seq := {
   le_refl := real_seq.le_refl,
   le_trans := real_seq.le_trans,
   le_antisymm := real_seq.le_antisymm,
+}
+
+instance : mul_action ℝ seq := {
+  one_smul := real_seq.one_smul,
+  mul_smul := real_seq.mul_smul,
 }
 
 -- Section 3.1 : Convergence of Sequences
