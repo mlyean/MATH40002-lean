@@ -39,6 +39,9 @@ begin
   exact finset.sum_Ico_consecutive a (zero_le m) hmn,
 end
 
+lemma partial_sum_smul {a : seq} {c : ℝ} : partial_sum (c • a) = c • partial_sum a :=
+  funext (λ n, finset.sum_hom _ _)
+
 def sum_to_inf_eq (a : seq) := is_limit (partial_sum a)
 notation `∑ ` a ` ⟶ ` l := sum_to_inf_eq a l
 
@@ -56,7 +59,7 @@ end sec_4_1
 section sec_4_2
 
 -- Absolute convergence
-def abs_convergent (a : seq) := seq_converges (partial_sum (abs ∘ a))
+def abs_convergent (a : seq) := sum_to_inf_converges (abs ∘ a)
 
 end sec_4_2
 
