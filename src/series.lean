@@ -331,7 +331,7 @@ end
 
 -- Theorem 4.11
 theorem convergent_of_abs_convergent {a : seq} (ha : abs_convergent a) : sum_to_inf_converges a := begin
-  unfold abs_convergent at ha,
+  unfold abs_convergent sum_to_inf_converges at ha,
   rw [converges_iff_cauchy, partial_sum_cauchy_iff] at ha,
   rw [sum_to_inf_converges_iff_cauchy, cauchy_iff],
   intros ε hε,
@@ -407,7 +407,28 @@ end
 theorem comparison_test₃ {a b : seq} (hb : abs_convergent b) (hb' : ∀ n, b n ≠ 0) (hab : seq_converges (a / b)) :
   abs_convergent a :=
 begin
-  sorry,
+  cases hab with l hl,
+  cases hl 1 zero_lt_one with N hN,
+  unfold abs_convergent,
+  rw ←sum_to_inf_converges_iff_tail_converges N,
+  have : abs ∘ a ∘ (+ N) ≤ (abs l + 1) • (abs ∘ b ∘ (+ N)) := begin
+    intro n,
+    refine le_of_lt _,
+    change abs (a (n + N)) < (abs l + 1) * abs (b (n + N)),
+    replace hN : abs (a (n + N) / b (n + N) - l) < 1 := hN (n + N) (nat.le_add_left N n),
+    have : abs (a (n + N) / b (n + N)) < abs l + 1 := calc
+      abs (a (n + N) / b (n + N)) = abs (l + (a (n + N) / b (n + N) - l)) : congr_arg abs (eq_add_of_sub_eq' rfl)
+        ... ≤ abs l + abs (a (n + N) / b (n + N) - l) : abs_add _ _
+        ... < abs l + 1 : add_lt_add_left hN _,
+    rwa [abs_div, div_lt_iff _] at this,
+    rw abs_pos_iff,
+    exact hb' (n + N),
+  end,
+  refine comparison_test (λ n, abs_nonneg _) this _,
+  unfold sum_to_inf_converges,
+  rw [partial_sum_smul, seq_converges_iff_smul_converges],
+  { exact (@sum_to_inf_converges_iff_tail_converges (abs ∘ b) N).mpr hb },
+  { exact ne_of_gt (lt_of_le_of_lt (abs_nonneg _) (lt_add_one _)) }
 end
 
 -- Theorem 4.22 (Alternating Series Test)
