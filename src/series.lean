@@ -435,16 +435,33 @@ end
 theorem alternating_series_test {a : seq} (ha : seq_decreasing a) (ha' : a ⟶ 0) :
   sum_to_inf_converges ((λ n, (-1) ^ n) * a) :=
 begin
+  have ha'' : a ≥ 0 := begin
+    intro n,
+    by_contradiction h,
+    erw [not_le, ←neg_pos] at h,
+    cases ha' (-a n) h with N hN,
+    replace hN := hN (max n N) (le_max_right _ _),
+    rw sub_zero at hN,
+    refine not_lt_of_le (le_abs_self (-a (max n N))) _,
+    rw abs_neg,
+    exact lt_of_lt_of_le hN (ha (le_max_left _ _)),
+  end,
+  rw [sum_to_inf_converges_iff_cauchy, partial_sum_cauchy_iff],
+  intros ε hε,
   sorry,
 end
 
 -- Theorem 4.23 (Ratio Test)
-theorem ratio_test {a : seq} {l : ℝ} (ha : (a ∘ (+1)) / a ⟶ l) (hl : l < 1) : abs_convergent a := begin
+theorem ratio_test {a : seq} {l : ℝ} (ha : (a ∘ (+1)) / a ⟶ l) (ha' : ∀ n, a n ≠ 0) (hl : l < 1) :
+  abs_convergent a :=
+begin
   sorry,
 end
 
 -- Theorem 4.25 (Root Test)
-theorem root_test {a : seq} {r : ℝ} (ha : (λ n, abs (a n) ^ (1 / n)) ⟶ r) (hr : r < 1) : abs_convergent a := begin
+theorem root_test {a : seq} {r : ℝ} (ha : (λ n, abs (a n) ^ (1 / n)) ⟶ r) (hr : r < 1) :
+  abs_convergent a :=
+begin
   sorry,
 end
 
