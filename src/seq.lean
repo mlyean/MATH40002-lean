@@ -1111,10 +1111,9 @@ begin
       { exact le_refl _, },
       { refine le_trans (le_of_lt _) ih,
         change a (n (k + 1)) < a (n k),
-        cases classical.some_spec (hnfin (n_aux k)) with h2 h3,
-        refine h3 _ _,
-        cases classical.some_spec (hnfin (n k)) with h4 h5,
-        exact h4,
+        cases classical.some_spec (hnfin (n_aux k)) with h₁ h₂,
+        refine h₂ _ _,
+        exact classical.some (classical.some_spec (hnfin (n k))),
       }
     end,
     have hb' : is_subseq_of a b := begin
