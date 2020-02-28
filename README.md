@@ -16,7 +16,7 @@ Some Analysis I related stuff in Lean.
     + Order limit theorem
     + Squeeze theorem
     + Cauchy if and only if convergent
-    + Bolzano-Weierstrass theorem (WIP)
+    + Bolzano-Weierstrass theorem
     + Some particular limits (`x ^ n`, `1 / n ^ k`, etc.)
 - `src/series_def.lean` contains definitions related to real series.
     + Partial sums
@@ -24,8 +24,11 @@ Some Analysis I related stuff in Lean.
     + Absolute convergence
 - `src/series.lean` contains examples and propositions.
     + Limit test
-    + Comparison tests (WIP)
+    + Comparison tests
     + Alternating series test (WIP)
     + Ratio test (WIP)
     + Root test (WIP)
     + Some particular series (`x ^ n`, `1 / n`, `1 / n ^ 2` etc.)
+    + Power series (WIP)
+- `src/continuity_def.lean` contains definitions related to continuity.
+- `src/continuity.lean` contains examples and propositions
