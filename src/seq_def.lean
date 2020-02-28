@@ -95,43 +95,71 @@ def seq_bdd_above (a : seq) := bdd_above (set.range a)
 def seq_bdd_below (a : seq) := bdd_below (set.range a)
 def seq_bdd (a : seq) := ∃ M > 0, ∀ n, abs (a n) ≤ M
 
-lemma seq_bdd_above_iff {a : seq} : seq_bdd_above a ↔ ∃ A > 0, ∀ n, a n ≤ A := begin
+lemma seq_bdd_above_iff {a : seq} : seq_bdd_above a ↔ ∃ A, ∀ n, a n ≤ A := begin
+  split,
+  { rintro ⟨A, hA⟩,
+    existsi A,
+    intro n,
+    exact hA (set.mem_range_self n),
+  },
+  { rintro ⟨A, hA⟩,
+    existsi A,
+    intros x hx,
+    rw set.mem_range at hx,
+    cases hx with y hy,
+    subst hy,
+    exact hA y,
+  }
+end
+
+lemma seq_bdd_above_iff' {a : seq} : seq_bdd_above a ↔ ∃ A > 0, ∀ n, a n ≤ A := begin
+  rw seq_bdd_above_iff,
   split,
   { rintro ⟨A, hA⟩,
     let A' := max A 1,
     have hA' : A' > 0 := lt_of_lt_of_le zero_lt_one (le_max_right A 1),
     existsi [A', hA'],
     intro n,
-    exact le_trans (hA (set.mem_range_self n)) (le_max_left A 1),
+    exact le_trans (hA n) (le_max_left A 1),
   },
   { rintro ⟨A, ⟨hA₁, hA₂⟩⟩,
+    existsi A,
+    exact hA₂,
+  }
+end
+
+lemma seq_bdd_below_iff {a : seq} : seq_bdd_below a ↔ ∃ A, ∀ n, a n ≥ A := begin
+  split,
+  { rintro ⟨A, hA⟩,
+    existsi A,
+    intro n,
+    exact hA (set.mem_range_self n),
+  },
+  { rintro ⟨A, hA⟩,
     existsi A,
     intros x hx,
     rw set.mem_range at hx,
     cases hx with y hy,
     subst hy,
-    exact hA₂ y,
+    exact hA y,
   }
 end
 
-lemma seq_bdd_below_iff {a : seq} : seq_bdd_below a ↔ ∃ A > 0, ∀ n, a n ≥ -A := begin
+lemma seq_bdd_below_iff' {a : seq} : seq_bdd_below a ↔ ∃ A > 0, ∀ n, a n ≥ -A := begin
+  rw seq_bdd_below_iff,
   split,
   { rintro ⟨A, hA⟩,
     let A' := max (-A) 1,
     have hA' : A' > 0 := lt_of_lt_of_le zero_lt_one (le_max_right (-A) 1),
     existsi [A', hA'],
     intro n,
-    refine le_trans _ (hA (set.mem_range_self n)),
+    refine le_trans _ (hA n),
     rw neg_le,
     exact le_max_left (-A) 1,
   },
   { rintro ⟨A, ⟨hA₁, hA₂⟩⟩,
     existsi (-A),
-    intros x hx,
-    rw set.mem_range at hx,
-    cases hx with y hy,
-    subst hy,
-    exact hA₂ y,
+    exact hA₂,
   }
 end
 
@@ -156,7 +184,7 @@ lemma seq_bdd_iff {a : seq} : seq_bdd a ↔ seq_bdd_above a ∧ seq_bdd_below a 
   { intro ha,
     exact ⟨seq_bdd_above_of_bdd ha, seq_bdd_below_of_bdd ha⟩,
   },
-  { rw [seq_bdd_above_iff, seq_bdd_below_iff],
+  { rw [seq_bdd_above_iff', seq_bdd_below_iff'],
     rintro ⟨⟨A₁, hA₁, hA₁'⟩, ⟨A₂, hA₂, hA₂'⟩⟩,
     let A := max A₁ A₂,
     existsi [A, lt_of_lt_of_le hA₁ (le_max_left _ _)],

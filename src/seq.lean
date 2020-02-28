@@ -1208,6 +1208,16 @@ lemma seq_not_bdd_above_iff {a : seq} :
 begin
   split,
   { intro h,
+    rw seq_bdd_above_iff at h,
+    push_neg at h,
+    let n : ℕ → ℕ := sorry,
+    have hn : strict_mono n := sorry,
+    let b := a ∘ n,
+    have hb : is_subseq_of a b := begin
+      existsi psigma.mk n hn,
+      refl,
+    end,
+    existsi [b, hb],
     sorry,
   },
   { rintros ⟨b, ⟨⟨p, hp⟩, hb⟩⟩,
@@ -1228,6 +1238,16 @@ lemma seq_not_bdd_below_iff {a : seq} :
 begin
   split,
   { intro h,
+    rw seq_bdd_below_iff at h,
+    push_neg at h,
+    let n : ℕ → ℕ := sorry,
+    have hn : strict_mono n := sorry,
+    let b := a ∘ n,
+    have hb : is_subseq_of a b := begin
+      existsi psigma.mk n hn,
+      refl,
+    end,
+    existsi [b, hb],
     sorry,
   },
   { rintros ⟨b, ⟨⟨p, hp⟩, hb⟩⟩,
