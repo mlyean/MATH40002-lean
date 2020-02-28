@@ -378,8 +378,6 @@ lemma seq_converges_iff_smul_converges {a : seq} {c : ℝ} (hc : c ≠ 0) : seq_
   }
 end
 
-#check one_div_mul_cancel
-
 section specific_limits
 
 lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 := begin
@@ -1011,6 +1009,8 @@ end
 -- Theorem 3.26 (Bolzano-Weierstrass theorem)
 section thm_3_26
 
+local attribute [instance] classical.prop_decidable
+
 parameter (a : seq)
 
 def is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j
@@ -1021,14 +1021,26 @@ lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j :=
   simp,
 end
 
+lemma finite.nat (s : set ℕ) : set.finite s ↔ ∃ n, ∀ m > n, m ∉ s := begin
+  split,
+  { sorry, },
+  { sorry, }
+end
+
+lemma infinite.nat (s : set ℕ) : set.infinite s ↔ ∀ n, ∃ m > n, m ∈ s := begin
+  unfold set.infinite,
+  rw finite.nat,
+  finish,
+end
+
 theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
   ∃ (b : seq) (hb : is_subseq_of a b), seq_converges b :=
 begin
   let peak_points : set ℕ := is_peak_point a,
   rw seq_bdd_iff at ha,
   cases classical.em (set.finite peak_points) with hfin hnfin,
-  { let m := option.iget hfin.to_finset.max,
-    have hm : ∀ k > m, ¬is_peak_point a k := begin
+  { let m := option.iget hfin.to_finset.max + 1,
+    have hm : ∀ k ≥ m, ¬is_peak_point a k := begin
       intros k hk hk',
       change k ∈ peak_points at hk',
       cases h : hfin.to_finset.max with x,
@@ -1037,22 +1049,44 @@ begin
         rw ←h,
         exact set.finite.mem_to_finset.mpr hk',
       },
-      { have : m = option.iget hfin.to_finset.max := rfl,
+      { have : m = option.iget hfin.to_finset.max + 1 := rfl,
         rw [h, option.iget_some] at this,
         rw this at hk,
         refine lt_irrefl x (lt_of_lt_of_le hk _),
         exact finset.le_max_of_mem (set.finite.mem_to_finset.mpr hk') h,
       }
     end,
-    replace hm : ∀ k > m, ∃ j > k, a j ≥ a k := begin
-      intros k hk,
-      rw ←not_peak_point,
-      exact hm k hk,
+    let a_aux := a ∘ (+ m),
+    replace hm : ∀ k, ∃ j > k, a_aux j ≥ a_aux k := begin
+      intro k,
+      have h := (not_peak_point _ _).mp (hm (k + m) (nat.le_add_left m k)),
+      rcases h with ⟨j, ⟨hj₁, hj₂⟩⟩,
+      existsi [j - m, nat.lt_sub_right_of_add_lt hj₁],
+      convert hj₂,
+      change a (j - m + m) = a j,
+      refine congr rfl (nat.sub_add_cancel _),
+      exact le_of_lt (lt_of_le_of_lt (nat.le_add_left m k) hj₁),
     end,
-    let n : ℕ → ℕ := sorry,
-    have hn : strict_mono n := sorry,
+    let n_aux : ℕ → ℕ := nat.rec 0 (λ x y, classical.some (hm y)),
+    let n : ℕ → ℕ := (+ m) ∘ n_aux,
     let b := a ∘ n,
-    have hb : seq_increasing b := sorry,
+    have hn : strict_mono n := begin
+      refine strict_mono.nat _,
+      intro k,
+      change n_aux k + m < n_aux (k + 1) + m,
+      rw add_lt_add_iff_right,
+      exact classical.some (classical.some_spec (hm (n_aux k))),
+    end,
+    have hb : seq_increasing b := begin
+      intros x y hxy,
+      induction hxy with k hk ih,
+      { exact le_refl _, },
+      { refine le_trans ih _,
+        change a_aux (n_aux k) ≤ a_aux (n_aux (k + 1)),
+        cases classical.some_spec (hm (n_aux k)) with h2 h3,
+        exact h3,
+      }
+    end,
     have hb' : is_subseq_of a b := begin
       existsi psigma.mk n hn,
       refl,
@@ -1061,10 +1095,28 @@ begin
     exact seq_converges_of_bdd_increasing hb (bdd_above_of_subseq ha.1 hb'),
   },
   { change set.infinite peak_points at hnfin,
-    let n : ℕ → ℕ := sorry,
-    have hn : strict_mono n := sorry,
+    rw infinite.nat at hnfin,
+    let n_aux : ℕ → ℕ := nat.rec 0 (λ x y, classical.some (hnfin y)),
+    let n := n_aux ∘ (+ 1),
+    have hn : strict_mono n := begin
+      refine strict_mono.nat _,
+      intro k,
+      exact classical.some (classical.some_spec (hnfin (n k))),
+    end,
     let b := a ∘ n,
-    have hb : seq_decreasing b := sorry,
+    have hb : seq_decreasing b := begin
+      intros x y hxy,
+      erw neg_le_neg_iff,
+      induction hxy with k hk ih,
+      { exact le_refl _, },
+      { refine le_trans (le_of_lt _) ih,
+        change a (n (k + 1)) < a (n k),
+        cases classical.some_spec (hnfin (n_aux k)) with h2 h3,
+        refine h3 _ _,
+        cases classical.some_spec (hnfin (n k)) with h4 h5,
+        exact h4,
+      }
+    end,
     have hb' : is_subseq_of a b := begin
       existsi psigma.mk n hn,
       refl,
