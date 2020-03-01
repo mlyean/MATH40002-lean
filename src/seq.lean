@@ -409,23 +409,12 @@ lemma seq_converges_iff_tail_converges {a : seq} (k : ℕ) : seq_converges a ↔
   exists_congr (λ l, lim_eq_lim_of_tail k)
 
 lemma lim_abs_eq_zero_iff {a : seq} : (abs ∘ a ⟶ 0) ↔ (a ⟶ 0) := begin
-  split,
-  { intros hla ε hε,
-    cases hla ε hε with N hN,
-    existsi N,
-    intros n hn,
-    rw sub_zero,
-    have := hN n hn,
-    rwa [sub_zero, abs_abs] at this,
-  },
-  { intros hla ε hε,
-    cases hla ε hε with N hN,
-    existsi N,
-    intros n hn,
-    rw [sub_zero, abs_abs],
-    have := hN n hn,
-    rwa sub_zero at this,
-  }
+  refine forall_congr (λ ε, _),
+  refine imp_congr iff.rfl _,
+  refine exists_congr (λ N, _),
+  refine forall_congr (λ n, _),
+  refine imp_congr iff.rfl _,
+  rw [sub_zero, sub_zero, abs_abs],
 end
 
 -- Remark 3.12
@@ -535,7 +524,7 @@ begin
 end
 
 theorem lim_sqrt_eq_sqrt_lim {a : seq} {la : ℝ} (ha : a ≥ 0) (hla : a ⟶ la) :
-  (real.sqrt ∘ a) ⟶ (real.sqrt la) :=
+  real.sqrt ∘ a ⟶ real.sqrt la :=
 begin
   have hla_nonneg : la ≥ 0 := lim_le_of_seq_le ha lim_of_zero hla,
   cases lt_or_eq_of_le hla_nonneg with h h,
@@ -569,7 +558,7 @@ begin
 end
 
 -- Problem Sheet 4: Question 3 (Squeeze Theorem)
-theorem squeeze_theorem {a b c : seq} (la : ℝ) (hla : a ⟶ la) {hlc : c ⟶ la} (hab : a ≤ b) (hbc : b ≤ c) :
+theorem squeeze_theorem {a b c : seq} {la : ℝ} (hla : a ⟶ la) (hlc : c ⟶ la) (hab : a ≤ b) (hbc : b ≤ c) :
   b ⟶ la :=
 begin
   intros ε hε,
@@ -597,7 +586,7 @@ begin
         }
       ... = abs (c n - la) + abs (a n - la) + abs (a n - la) + abs (c n - la) : by rw abs_sub (a n) la
       ... = 2 * (abs (a n - la) + abs (c n - la)) : by ring,
-  rw mul_le_mul_left (two_pos : (0 : ℝ) < 2) at h₃,
+  rw mul_le_mul_left zero_lt_two at h₃,
   calc
     abs (b n - la) ≤ abs (a n - la) + abs (c n - la) : h₃
       ... < ε / 2 + ε / 2 : add_lt_add hNa hNc
@@ -919,7 +908,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     exact zero_add k,
   end,
   have hb := lim_of_bdd_decreaing_seq hb_decr hb_bdd_below,
-  set lb := real.Inf b,
+  let lb := real.Inf b,
   existsi lb,
   intros ε hε,
   cases ha (ε / 2) (half_pos hε) with N hN,
@@ -1007,10 +996,10 @@ begin
       intros k hk hk',
       change k ∈ peak_points at hk',
       cases h : hfin.to_finset.max with x,
-      { rw finset.max_eq_none at h,
-        refine finset.not_mem_empty k _,
-        rw ←h,
-        exact set.finite.mem_to_finset.mpr hk',
+      { refine finset.not_mem_empty k _,
+        convert set.finite.mem_to_finset.mpr hk',
+        rw finset.max_eq_none at h,
+        exact h.symm,
       },
       { have : m = option.iget hfin.to_finset.max + 1 := rfl,
         rw [h, option.iget_some] at this,
@@ -1225,22 +1214,14 @@ begin
     left,
     exact hb',
   },
-  { rw [seq_bdd_iff, classical.not_and_distrib] at ha,
+  { rw [seq_bdd_iff, classical.not_and_distrib, seq_not_bdd_above_iff, seq_not_bdd_below_iff] at ha,
     cases ha with ha ha,
-    { rw seq_not_bdd_above_iff at ha,
+    all_goals {
       rcases ha with ⟨b, ⟨hb, hb'⟩⟩,
       existsi [b, hb],
       right,
-      left,
-      exact hb',
+      cc,
     },
-    { rw seq_not_bdd_below_iff at ha,
-      rcases ha with ⟨b, ⟨hb, hb'⟩⟩,
-      existsi [b, hb],
-      right,
-      right,
-      exact hb',
-    }
   }
 end
 
