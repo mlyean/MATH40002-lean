@@ -104,9 +104,7 @@ lemma seq_bdd_above_iff {a : seq} : seq_bdd_above a ↔ ∃ A, ∀ n, a n ≤ A 
   },
   { rintro ⟨A, hA⟩,
     existsi A,
-    intros x hx,
-    rw set.mem_range at hx,
-    cases hx with y hy,
+    rintros x ⟨y, hy⟩,
     subst hy,
     exact hA y,
   }
@@ -137,9 +135,7 @@ lemma seq_bdd_below_iff {a : seq} : seq_bdd_below a ↔ ∃ A, ∀ n, a n ≥ A 
   },
   { rintro ⟨A, hA⟩,
     existsi A,
-    intros x hx,
-    rw set.mem_range at hx,
-    cases hx with y hy,
+    rintros x ⟨y, hy⟩,
     subst hy,
     exact hA y,
   }
