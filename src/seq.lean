@@ -82,12 +82,11 @@ example : (λ n, (n + 2) / (n - 2)) ⟶ 1 := begin
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
         refine congr_arg abs _,
-        conv_lhs {
-          congr,
-          skip,
-          rw ←div_self (ne_of_gt hn_sub_2_pos)
-        },
-        rw ←sub_div,
+        have : -2 + (n : ℝ) ≠ 0 := begin
+          erw [add_comm, sub_ne_zero],
+          exact ne_of_gt hn_gt_2,
+        end,
+        field_simp [this],
         norm_num,
       }
       ... = 4 / ((n : ℝ) - 2) : abs_of_pos (div_pos four_pos hn_sub_2_pos)
@@ -314,12 +313,11 @@ theorem lim_smul_eq_mul_lim {a : seq} {la : ℝ} (c : ℝ) (hla : a ⟶ la) : c 
   lim_mul_eq_mul_lim lim_of_const_seq hla
 
 theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : -a ⟶ -la := begin
-  conv {
-    congr,
-    { change (λ n, -a n), funext, rw neg_eq_neg_one_mul },
-    { rw neg_eq_neg_one_mul }
+  convert lim_smul_eq_mul_lim (-1) hla,
+  { rw neg_eq_neg_one_mul,
+    refl,
   },
-  exact lim_smul_eq_mul_lim (-1) hla,
+  { rw neg_eq_neg_one_mul }
 end
 
 theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
@@ -335,19 +333,8 @@ end
 
 theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) := begin
   induction n with n hn,
-  { simp only [nat.nat_zero_eq_zero, pow_zero],
-    exact lim_of_one,
-  },
-  { conv {
-      congr,
-      { change (λ k, (a k) ^ (n + 1)),
-        funext,
-        rw pow_succ,
-      },
-      { rw pow_succ }
-    },
-    exact lim_mul_eq_mul_lim hla hn,
-  }
+  { exact lim_of_one },
+  { exact lim_mul_eq_mul_lim hla hn }
 end
 
 end algebra_of_limits
@@ -656,44 +643,34 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : (λ 
     rw sub_pos,
     exact one_lt_one_div hr_pos hr_lt_one,
   end,
-  have hx : ∀ (n : ℕ), r ^ n = 1 / (1 + x) ^ n := begin
-    have h : r = 1 / (1 + x) := by { dsimp only [x], field_simp },
-    intro n,
-    rw h,
-    refine one_div_pow _ n,
-    dsimp only [x],
-    simp only [one_div_eq_inv, inv_eq_zero, ne.def, add_add_neg_cancel'_right, sub_eq_add_neg],
-    exact ne_of_gt hr_pos,
-  end,
-  conv {
-    congr,
-    { funext,
-      rw hx
-    }
-  },
-  exact lim_of_geom_zero_aux hx_pos,
+  convert lim_of_geom_zero_aux hx_pos,
+  funext,
+  have : r = 1 / (1 + x) := by { dsimp only [x], field_simp },
+  rw this,
+  refine one_div_pow _ n,
+  dsimp only [x],
+  simp only [one_div_eq_inv, inv_eq_zero, ne.def, add_add_neg_cancel'_right, sub_eq_add_neg],
+  exact ne_of_gt hr_pos,
 end
 
 lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (λ n, r ^ n) ⟶ 0 := begin
   cases decidable.em (r = 0) with h h,
   { rw lim_eq_lim_of_tail 1,
     subst h,
-    dsimp only [function.comp],
-    simp only [zero_pow (nat.succ_pos _)],
-    exact lim_of_zero,
+    convert lim_of_zero,
+    funext,
+    change 0 ^ (x + 1) = (0 : seq) x,
+    rw zero_pow (nat.succ_pos x),
+    refl,
   },
   { replace h := abs_pos_of_ne_zero h,
     rw [set.mem_Ioo, ←abs_lt] at hr,
-    have hr' : abs r ∈ set.Ioo (0 : ℝ) (1 : ℝ) := ⟨h, hr⟩,
     rw ←lim_abs_eq_zero_iff,
     dsimp only [function.comp],
-    conv {
-      congr,
-      { funext,
-        rw ←pow_abs,
-      }
-    },
-    exact lim_of_geom_zero hr',
+    have hr' : abs r ∈ set.Ioo (0 : ℝ) (1 : ℝ) := ⟨h, hr⟩,
+    convert lim_of_geom_zero hr',
+    funext,
+    exact (pow_abs r x).symm,
   }
 end
 
@@ -789,7 +766,7 @@ begin
   refine exists_congr (λ N, _),
   split,
   { intros h m hm n hn,
-    refine h m hm n (le_trans hm hn),
+    exact h m hm n (le_trans hm hn),
   },
   { intros h m hm n hn,
     cases le_or_gt m n with hmn hmn,
@@ -956,7 +933,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     refine le_trans (real.Inf_le b hb_bdd_below (set.mem_range_self N)) _,
     dsimp only [b],
     refine real.Sup_le_ub (set.range (a ∘ (+ N))) _ _,
-    show ∃ x, x ∈ set.range (a ∘ (+ N)), from set.range_nonempty (a ∘ (+ N)),
+    show (set.range (a ∘ (+ N))).nonempty, from set.range_nonempty (a ∘ (+ N)),
     rintros x ⟨k, hk⟩,
     subst hk,
     refine le_of_lt _,
@@ -967,7 +944,7 @@ theorem converges_of_cauchy {a : seq} : seq_cauchy a → seq_converges a := begi
     have : lb = real.Inf (set.range (b ∘ (+ N))) := Inf_decreasing_eq_Inf_tail N hb_decr hb_bdd_below,
     rw this,
     refine (real.le_Inf (set.range (b ∘ (+ N))) _ _).mpr _,
-    show ∃ x, x ∈ set.range (b ∘ (+ N)), from set.range_nonempty (b ∘ (+ N)),
+    show (set.range (b ∘ (+ N))).nonempty, from set.range_nonempty (b ∘ (+ N)),
     show seq_bdd_below (b ∘ (+ N)), from bdd_below_of_tail N hb_bdd_below,
     rintros x ⟨k, hk⟩,
     dsimp at hk,
@@ -1073,10 +1050,7 @@ begin
         exact h3,
       }
     end,
-    have hb' : is_subseq_of a b := begin
-      existsi psigma.mk n hn,
-      refl,
-    end,
+    have hb' : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb'],
     exact seq_converges_of_bdd_increasing hb (bdd_above_of_subseq ha.1 hb'),
   },
@@ -1102,10 +1076,7 @@ begin
         exact classical.some (classical.some_spec (hnfin (n k))),
       }
     end,
-    have hb' : is_subseq_of a b := begin
-      existsi psigma.mk n hn,
-      refl,
-    end,
+    have hb' : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb'],
     exact seq_converges_of_bdd_decreasing hb (bdd_below_of_subseq ha.2 hb'),
   },
@@ -1130,8 +1101,7 @@ begin
   rintro ⟨la, hla⟩,
   have hlb' := limit_unique hlb (lim_of_subseq hb hla),
   have hlc' := limit_unique hlc (lim_of_subseq hc hla),
-  refine hbc _,
-  rw [hlb', hlc'],
+  exact hbc (eq.trans hlb' (eq.symm hlc')),
 end
 
 -- Unseen Sheet 4: Question 4
@@ -1141,19 +1111,17 @@ begin
   split,
   { intro ha,
     split,
-    { intros ε hε,
+    all_goals {
+      intros ε hε,
       cases ha ε hε with N hN,
       existsi N,
       intros n hn,
-      refine hN (2 * n) _,
+    },
+    { refine hN (2 * n) _,
       rw two_mul,
       exact le_add_right hn,
     },
-    { intros ε hε,
-      cases ha ε hε with N hN,
-      existsi N,
-      intros n hn,
-      refine hN (2 * n + 1) _,
+    { refine hN (2 * n + 1) _,
       rw [two_mul, add_assoc],
       exact le_add_right hn,
     }
@@ -1203,10 +1171,7 @@ begin
       sorry,
     end,
     let b := a ∘ n,
-    have hb : is_subseq_of a b := begin
-      existsi psigma.mk n hn,
-      refl,
-    end,
+    have hb : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb],
     sorry,
   },
@@ -1233,10 +1198,7 @@ begin
     let n : ℕ → ℕ := sorry,
     have hn : strict_mono n := sorry,
     let b := a ∘ n,
-    have hb : is_subseq_of a b := begin
-      existsi psigma.mk n hn,
-      refl,
-    end,
+    have hb : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb],
     sorry,
   },
