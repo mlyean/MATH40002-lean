@@ -1009,8 +1009,6 @@ end
 -- Theorem 3.26 (Bolzano-Weierstrass theorem)
 section thm_3_26
 
-local attribute [instance] classical.prop_decidable
-
 parameter (a : seq)
 
 def is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j
@@ -1019,18 +1017,6 @@ lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j :=
   unfold is_peak_point,
   push_neg,
   simp,
-end
-
-lemma finite.nat (s : set ℕ) : set.finite s ↔ ∃ n, ∀ m > n, m ∉ s := begin
-  split,
-  { sorry, },
-  { sorry, }
-end
-
-lemma infinite.nat (s : set ℕ) : set.infinite s ↔ ∀ n, ∃ m > n, m ∈ s := begin
-  unfold set.infinite,
-  rw finite.nat,
-  finish,
 end
 
 theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
@@ -1209,8 +1195,13 @@ begin
   { intro h,
     rw seq_bdd_above_iff at h,
     push_neg at h,
-    let n : ℕ → ℕ := sorry,
-    have hn : strict_mono n := sorry,
+    let n_aux : ℕ → ℕ := nat.rec 0 (λ (x y : ℕ), classical.some (h x)),
+    let n := n_aux ∘ (+ 1),
+    have hn : strict_mono n := begin
+      refine strict_mono.nat _,
+      intro k,
+      sorry,
+    end,
     let b := a ∘ n,
     have hb : is_subseq_of a b := begin
       existsi psigma.mk n hn,
