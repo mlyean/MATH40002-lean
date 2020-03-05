@@ -18,8 +18,8 @@ lemma lim_of_const_seq {a : ℝ} : const_seq a ⟶ a := begin
   intros ε hε,
   existsi 0,
   intros n Hn,
+  convert hε,
   erw [sub_self, abs_zero],
-  exact hε,
 end
 
 lemma lim_of_zero : 0 ⟶ 0 := @lim_of_const_seq 0
@@ -33,9 +33,7 @@ lemma lim_of_reciprocal : (λ n, 1 / (n + 1)) ⟶ 0 := begin
   existsi N,
   intros n hn,
   rw [sub_zero, abs_of_pos (@nat.one_div_pos_of_nat ℝ _ n)],
-  refine lt_of_le_of_lt _ hN,
-  rw one_div_le_one_div (@nat.cast_add_one_pos ℝ _ n) (@nat.cast_add_one_pos ℝ _ N),
-  exact add_le_add_right' (nat.cast_le.mpr hn),
+  exact lt_of_le_of_lt (nat.one_div_le_one_div hn) hN,
 end
 
 end specific_limits
@@ -48,7 +46,6 @@ example : (λ n, (n + 5) / (n + 1)) ⟶ 1 := begin
   intros n hn,
   have hN' : 0 < (N : ℝ) + 1 := nat.cast_add_one_pos N,
   have hn' : 0 < (n : ℝ) + 1 := nat.cast_add_one_pos n,
-  change abs (((n : ℝ) + 5) / (n + 1) - 1) < ε,
   rw abs_of_pos,
   show ((n : ℝ) + 5) / (n + 1) - 1 > 0, by {
     rw [gt_iff_lt, sub_pos],
@@ -146,8 +143,8 @@ theorem limit_unique {a : seq} {l₁ l₂ : ℝ} (h₁ : a ⟶ l₁) (h₂ : a �
   cases h₁ (ε / 2) (half_pos hε) with N₁ hN₁,
   cases h₂ (ε / 2) (half_pos hε) with N₂ hN₂,
   let N := max N₁ N₂,
-  replace hN₁ := hN₁ N (le_max_left N₁ N₂),
-  replace hN₂ := hN₂ N (le_max_right N₁ N₂),
+  replace hN₁ := hN₁ N (le_max_left _ _),
+  replace hN₂ := hN₂ N (le_max_right _ _),
   calc
     abs (l₁ - l₂) ≤ abs (l₁ - a N) + abs (a N - l₂) : abs_sub_le l₁ (a N) l₂
       ... = abs (a N - l₁) + abs (a N - l₂) : by rw abs_sub
@@ -157,33 +154,37 @@ end
 
 -- Proposition 3.10
 lemma bdd_of_converges {a : seq} : seq_converges a → seq_bdd a := begin
-  intro ha,
-  cases ha with l hl,
+  rintro ⟨l, hl⟩,
   cases hl 1 zero_lt_one with N hN,
-  let head : finset ℝ := (finset.range (N + 1)).image (abs ∘ a),
-  have head_has_mem : abs (a 0) ∈ head := begin
-    refine finset.mem_image_of_mem (abs ∘ a) _,
-    rw finset.mem_range,
-    exact nat.succ_pos N,
-  end,
-  cases finset.max_of_mem head_has_mem with B hB,
-  let M := max B (abs l + 1),
-  have hM : M > 0 := begin
-    refine lt_of_lt_of_le zero_lt_one (le_max_right_of_le _),
-    rw le_add_iff_nonneg_left,
-    exact abs_nonneg l,
-  end,
+  let head : finset ℝ := (finset.range N).image (abs ∘ a),
+  let B := option.iget head.max,
+  let M := max B (abs l) + 1,
+  have hM : M > 0 :=
+    lt_of_lt_of_le zero_lt_one (le_add_of_nonneg_left (le_trans (abs_nonneg _) (le_max_right _ _))),
   existsi [M, hM],
   intro n,
-  cases le_or_gt n N with h h,
-  { refine le_trans (finset.le_max_of_mem _ hB) (le_max_left B (abs l + 1)),
+  refine le_of_lt _,
+  cases lt_or_ge n N with h h,
+  { refine lt_of_le_of_lt (le_trans _ (le_max_left _ _)) (lt_add_one _),
+    have h₁ : head.nonempty := begin
+      refine finset.nonempty.image _ (abs ∘ a),
+      existsi 0,
+      rw finset.mem_range,
+      exact lt_of_le_of_lt (zero_le n) h,
+    end,
+    dsimp [B],
+    cases finset.max_of_nonempty h₁ with b hb,
+    rw option.iget_of_mem hb,
+    refine finset.le_max_of_mem _ hb,
     refine finset.mem_image_of_mem (abs ∘ a) _,
     rw finset.mem_range,
-    exact nat.lt_succ_of_le h,
+    exact h,
   },
-  { have : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n (le_of_lt h)),
-    rw sub_lt_iff_lt_add' at this,
-    exact le_trans (le_of_lt this) (le_max_right B (abs l + 1)),
+  { have h₁ : abs (a n) - abs l < 1 := lt_of_le_of_lt (abs_sub_abs_le_abs_sub (a n) l) (hN n h),
+    rw sub_lt_iff_lt_add' at h₁,
+    calc
+      abs (a n) < abs l + 1 : h₁
+        ... ≤ max B (abs l) + 1 : add_le_add_right' (le_max_right _ _),
   }
 end
 
@@ -314,10 +315,7 @@ theorem lim_smul_eq_mul_lim {a : seq} {la : ℝ} (c : ℝ) (hla : a ⟶ la) : c 
 
 theorem lim_neg_eq_neg_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : -a ⟶ -la := begin
   convert lim_smul_eq_mul_lim (-1) hla,
-  { rw neg_eq_neg_one_mul,
-    refl,
-  },
-  { rw neg_eq_neg_one_mul }
+  all_goals { exact neg_eq_neg_one_mul _ },
 end
 
 theorem lim_sub_eq_sub_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b ⟶ lb) :
@@ -455,15 +453,15 @@ end
 theorem lim_of_bdd_increasing_seq {a : seq} (ha : seq_increasing a) (ha' : seq_bdd_above a) :
   a ⟶ real.Sup a :=
 begin
-  set l := real.Sup (set.range a),
+  let l := real.Sup a,
   intros ε hε,
-  have h : is_lub (set.range a) l := begin 
+  have h₁ : is_lub ↑a l := begin 
     cases ha' with b hb,
     exact real.is_lub_Sup (set.mem_range_self 0) hb,
   end,
-  have h' : l - ε < l := sub_lt_self l hε,
-  rcases (lt_is_lub_iff h).mp h' with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
-  clear h h',
+  have h₂ : l - ε < l := sub_lt_self l hε,
+  rcases (lt_is_lub_iff h₁).mp h₂ with ⟨x, ⟨⟨N, hx⟩, haN⟩⟩,
+  clear h₁ h₂,
   subst hx,
   existsi N,
   intros n hn,
@@ -658,8 +656,8 @@ lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (�
     dsimp only [function.comp],
     have hr' : abs r ∈ set.Ioo (0 : ℝ) (1 : ℝ) := ⟨h, hr⟩,
     convert lim_of_geom_zero hr',
-    funext,
-    exact (pow_abs r x).symm,
+    funext n,
+    exact (pow_abs r n).symm,
   }
 end
 
@@ -835,7 +833,6 @@ lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq
     let M := max B B',
     existsi M,
     intros x hx,
-    rw set.mem_range at hx,
     cases hx with n hn,
     subst hn,
     cases le_or_gt n k with h h,
