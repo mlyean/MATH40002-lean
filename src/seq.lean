@@ -220,34 +220,35 @@ theorem lim_mul_eq_mul_lim {a b : seq} {la lb : ℝ} (hla : a ⟶ la) (hlb : b �
 begin
   intros ε hε,
   rcases bdd_of_converges (seq_converges_of_has_limit hla) with ⟨A, ⟨hA₁, hA₂⟩⟩,
-  have H : 2 * (abs lb + 1) > 0 := mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
-  cases hla (ε / (2 * (abs lb + 1))) _ with Na hNa,
-  cases hlb (ε / (2 * A)) _ with Nb hNb,
-  show ε / (2 * (abs lb + 1)) > 0, from div_pos hε H,
-  show ε / (2 * A) > 0, from div_pos hε (mul_pos' zero_lt_two hA₁),
+  have h₁ : 2 * (abs lb + 1) > 0 :=
+    mul_pos' zero_lt_two (lt_of_le_of_lt (abs_nonneg lb) (lt_add_one (abs lb))),
+  cases hla (ε / (2 * (abs lb + 1))) (div_pos hε h₁) with Na hNa,
+  cases hlb (ε / (2 * A)) (div_pos hε (mul_pos' zero_lt_two hA₁)) with Nb hNb,
   let N := max Na Nb,
   existsi N,
   intros n Hn,
   replace hNa := hNa n (le_trans (le_max_left Na Nb) Hn),
   replace hNb := hNb n (le_trans (le_max_right Na Nb) Hn),
   replace hA₂ := hA₂ n,
-  have h₁ : abs (a n - la) * abs lb < ε / 2 := calc
+  have h₂ : abs (a n - la) * abs lb < ε / 2 := calc
       abs (a n - la) * abs lb ≤ (ε / (2 * (abs lb + 1))) * abs lb : mul_le_mul_of_nonneg_right (le_of_lt hNa) (abs_nonneg lb)
         ... = ε * abs lb / (2 * (abs lb + 1)) : by field_simp
         ... < ε / 2 : by {
-          rw [div_lt_iff' H, ←mul_lt_mul_right zero_lt_two, ←sub_pos],
-          field_simp,
-          ring,
-          exact mul_pos' zero_lt_two hε,
+          rw [div_lt_iff' h₁, mul_right_comm, mul_div_cancel'],
+          show (2 : ℝ) ≠ 0, by { norm_cast, norm_num },
+          exact mul_lt_mul_of_pos_left (lt_add_one _) hε,
         },
-  have h₂ : abs (a n) * abs (b n - lb) ≤ ε / 2 := calc
+  have h₃ : abs (a n) * abs (b n - lb) ≤ ε / 2 := calc
       abs (a n) * abs (b n - lb) ≤ A * (ε / (2 * A)) : mul_le_mul hA₂ (le_of_lt hNb) (abs_nonneg (b n - lb)) (le_of_lt hA₁)
-        ... = ε / 2 : by { field_simp [ne_of_gt hA₁], ring, },
+        ... = ε / 2 : by {
+          field_simp [ne_of_gt hA₁],
+          rw [mul_comm A ε, mul_comm 2 A, mul_assoc],
+        },
   calc
     abs (a n * b n - la * lb) = abs ((a n - la) * lb + a n * (b n - lb)) : by ring
-      ... ≤ abs ((a n - la) * lb) + abs(a n * (b n - lb)) : abs_add ((a n - la) * lb) (a n * (b n - lb))
+      ... ≤ abs ((a n - la) * lb) + abs (a n * (b n - lb)) : abs_add ((a n - la) * lb) (a n * (b n - lb))
       ... = abs (a n - la) * abs lb + abs (a n) * abs (b n - lb) : by rw [abs_mul, abs_mul]
-      ... < ε / 2 + ε / 2 : add_lt_add_of_lt_of_le h₁ h₂
+      ... < ε / 2 + ε / 2 : add_lt_add_of_lt_of_le h₂ h₃
       ... = ε : add_halves ε,
 end
 
@@ -1149,17 +1150,51 @@ begin
   { intro h,
     rw seq_bdd_above_iff at h,
     push_neg at h,
-    let n_aux : ℕ → ℕ := nat.rec 0 (λ (x y : ℕ), classical.some (h x)),
+    have h₁ : ∀ (A : ℝ) (n : ℕ), ∃ j > n, a j > A := begin
+      intros A n,
+      let head := (finset.range (n + 1)).image a,
+      have h₂ : head.nonempty := begin
+        refine finset.nonempty.image _ a,
+        existsi 0,
+        rw finset.mem_range,
+        exact nat.succ_pos',
+      end,
+      cases finset.max_of_nonempty h₂ with B hB,
+      let C := max A B,
+      cases h C with j hj,
+      have hj' : j > n := begin
+        refine lt_of_not_ge' _,
+        intro hj'',
+        refine not_le_of_lt hj _,
+        refine le_trans _ (le_max_right _ _),
+        refine finset.le_max_of_mem _ hB,
+        refine finset.mem_image_of_mem a _,
+        rw finset.mem_range,
+        exact nat.lt_succ_of_le hj'',
+      end,
+      existsi [j, hj'],
+      exact lt_of_le_of_lt (le_max_left _ _) hj,
+    end,
+    let n_aux : ℕ → ℕ := nat.rec 0 (λ (x y : ℕ), classical.some (h₁ x y)),
     let n := n_aux ∘ (+ 1),
     have hn : strict_mono n := begin
       refine strict_mono.nat _,
       intro k,
-      sorry,
+      exact classical.some (classical.some_spec (h₁ (k + 1) (n k))),
     end,
     let b := a ∘ n,
     have hb : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
+    have hb' : ∀ k, b k > k := begin
+      intro k,
+      cases classical.some_spec (h₁ (k) (n_aux k)) with h₁ h₂,
+      exact h₂,
+    end,
     existsi [b, hb],
-    sorry,
+    intro M,
+    let N : ℕ := nat_ceil M,
+    existsi N,
+    intros n hn,
+    exact le_of_lt (lt_of_le_of_lt (nat_ceil_le.mp hn) (hb' n)),
   },
   { rintros ⟨b, ⟨⟨p, hp⟩, hb⟩⟩,
     subst hp,
