@@ -3,9 +3,7 @@ import lemmas
 import data.set.intervals.basic
 import data.nat.parity
 
-namespace MATH40002
-
-open real_seq
+namespace real_seq
 
 -- Chapter 3 : Sequences
 
@@ -129,7 +127,7 @@ example (δ : ℝ) (h₁ : δ > 0) : seq_diverges (λ n, (-1) ^ n * δ) := begin
       ... = 2 * δ : eq.symm (two_mul δ),
 end
 
-lemma close_implies_eq (a b : ℝ) : (∀ ε > 0, abs (a - b) < ε) → a = b := begin
+lemma close_implies_eq {a b : ℝ} : (∀ ε > 0, abs (a - b) < ε) → a = b := begin
   intro h,
   rw ←sub_eq_zero,
   by_contradiction h',
@@ -138,7 +136,7 @@ end
 
 -- Theorem 3.9 (Uniqueness of limits)
 theorem limit_unique {a : seq} {l₁ l₂ : ℝ} (h₁ : a ⟶ l₁) (h₂ : a ⟶ l₂) : l₁ = l₂ := begin
-  refine close_implies_eq l₁ l₂ _,
+  refine close_implies_eq _,
   intros ε hε,
   cases h₁ (ε / 2) (half_pos hε) with N₁ hN₁,
   cases h₂ (ε / 2) (half_pos hε) with N₂ hN₂,
@@ -600,7 +598,7 @@ lemma bernoulli_inequality {n : ℕ} {x : ℝ} (hx : x > -1) : (1 + x) ^ n ≥ 1
   },
   { have hx' : 1 + x > 0 := by rwa [gt_iff_lt, ←sub_pos, sub_neg_eq_add, add_comm] at hx,
     calc
-    (1 + x) ^ (n + 1) = (1 + x) * (1 + x) ^ n : by rw pow_succ
+    (1 + x) ^ (n + 1) = (1 + x) * (1 + x) ^ n : pow_succ (1 + x) n
       ... ≥ (1 + x) * (1 + n * x) : by rwa [ge_iff_le, mul_le_mul_left hx'] 
       ... = 1 + (n + 1) * x + n * (x ^ 2) : by ring
       ... ≥ 1 + (n + 1) * x : le_add_of_nonneg_right (mul_nonneg (nat.cast_nonneg n) (pow_two_nonneg x)),
@@ -1297,4 +1295,4 @@ end
 
 end sec_3_3
 
-end MATH40002
+end real_seq
