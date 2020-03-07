@@ -122,7 +122,7 @@ section sec_1_0
 -- Proposition 1.2 (Algebra of Continuous Functions)
 section algebra_of_continuous_fns
 
-theorem cont_of_add_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+theorem continuous_at_of_add {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
   continuous_at (λ x, f x + g x) a :=
 begin
   rw continuous_iff_seq_continuous at *,
@@ -130,7 +130,7 @@ begin
   exact lim_add_eq_add_lim (hf x hx) (hg x hx),
 end
 
-theorem cont_of_sub_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+theorem continuous_at_of_sub {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
   continuous_at (λ x, f x - g x) a :=
 begin
   rw continuous_iff_seq_continuous at *,
@@ -138,7 +138,7 @@ begin
   exact lim_sub_eq_sub_lim (hf x hx) (hg x hx),
 end
 
-theorem cont_of_mul_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+theorem continuous_at_of_mul {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
   continuous_at (λ x, f x * g x) a :=
 begin
   rw continuous_iff_seq_continuous at *,
@@ -146,24 +146,23 @@ begin
   exact lim_mul_eq_mul_lim (hf x hx) (hg x hx),
 end
 
-theorem cont_of_div_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) (hga : g a ≠ 0) :
+theorem continuous_at_of_div {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) (hga : g a ≠ 0) :
   continuous_at (λ x, f x / g x) a :=
 begin
   rw continuous_iff_seq_continuous at *,
   intros x hx,
-  refine lim_div_eq_div_lim (hf x hx) (hg x hx) hga,
+  exact lim_div_eq_div_lim (hf x hx) (hg x hx) hga,
 end
 
 end algebra_of_continuous_fns
 
 -- Proposition 1.3
-lemma cont_of_comp_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g (f a)) :
+lemma continuous_at_of_comp {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g (f a)) :
   continuous_at (g ∘ f) a :=
 begin
   rw continuous_iff_seq_continuous at *,
   intros x hx,
-  refine hg (f ∘ x) _,
-  exact hf x hx,
+  exact hg (f ∘ x) (hf x hx),
 end
 
 end sec_1_0
