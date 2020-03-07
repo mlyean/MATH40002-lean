@@ -2,9 +2,9 @@ import continuity_def
 
 namespace continuity
 
-section sec_5_1
-
 open real_seq
+
+section sec_5_1
 
 lemma limits_unique {f : ℝ → ℝ} {x l₁ l₂ : ℝ} (hl₁ : limit_eq f x l₁) (hl₂ : limit_eq f x l₂) : l₁ = l₂ := begin
   refine close_implies_eq _,
@@ -31,12 +31,10 @@ lemma limits_unique {f : ℝ → ℝ} {x l₁ l₂ : ℝ} (hl₁ : limit_eq f x 
   },
 end
 
--- Example 5.2
-section ex_5_2
-
-noncomputable def f (x : ℝ) : ℝ := if x ≤ 0 then 0 else 1
-
-example : ¬ continuous_at f 0 := begin
+-- Example 5.3
+example : ¬ continuous_at (λ x, ite (x ≤ 0) 0 1) 0 := begin
+  let f : ℝ → ℝ := λ x, ite (x ≤ 0) 0 1,
+  change ¬ continuous_at f 0,
   unfold continuous_at,
   push_neg,
   existsi (1 : ℝ),
@@ -57,7 +55,65 @@ example : ¬ continuous_at f 0 := begin
   }
 end
 
-end ex_5_2
+-- Example 5.5
+example (m c : ℝ) : continuous (λ x, m * x + c) := begin
+  intros a ε hε,
+  sorry,
+end
+
+-- Example 5.6
+example (m c : ℝ) : continuous (^2) := begin
+  intros a ε hε,
+  sorry,
+end
+
+local attribute [instance] classical.prop_decidable
+
+-- Theorem 5.9
+theorem continuous_iff_seq_continuous {f : ℝ → ℝ} {a : ℝ} :
+  continuous_at f a ↔ ∀ (x : seq), (x ⟶ a) → (f ∘ x ⟶ f a) :=
+begin
+  split,
+  { intros h x hx ε hε,
+    rcases h ε hε with ⟨δ, hδ₁, hδ₂⟩,
+    cases hx δ hδ₁ with N hN,
+    existsi N,
+    intros n hn,
+    exact hδ₂ (x n) (hN n hn),
+  },
+  { intro h,
+    unfold continuous_at,
+    by_contradiction h₂,
+    push_neg at h₂,
+    rcases h₂ with ⟨ε, ⟨hε₁, hε₂⟩⟩,
+    refine not_forall_of_exists_not _ h,
+    let x : seq := λ n, classical.some (hε₂ (1 / (n + 1)) nat.one_div_pos_of_nat),
+    existsi x,
+    push_neg,
+    split,
+    { intros ε hε,
+      cases exists_nat_one_div_lt hε with N hN,
+      existsi N,
+      intros n hn,
+      calc
+        abs (x n - a) < 1 / (n + 1) : (classical.some_spec (hε₂ (1 / (n + 1)) _)).left
+          ... ≤ 1 / (N + 1) : nat.one_div_le_one_div hn
+          ... < ε : hN,
+    },
+    { unfold is_limit,
+      push_neg,
+      existsi ε,
+      split,
+      { exact hε₁ },
+      { intro N,
+        existsi N,
+        split,
+        { exact le_refl N },
+        { exact (classical.some_spec (hε₂ (1 / (N + 1)) _)).right }
+      }
+    }
+  }
+end
 
 end sec_5_1
 
