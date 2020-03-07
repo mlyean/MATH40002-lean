@@ -69,7 +69,7 @@ end
 
 local attribute [instance] classical.prop_decidable
 
--- Theorem 5.9
+-- Theorem 5.9 (Theorem 1.1 of term 2)
 theorem continuous_iff_seq_continuous {f : ℝ → ℝ} {a : ℝ} :
   continuous_at f a ↔ ∀ (x : seq), (x ⟶ a) → (f ∘ x ⟶ f a) :=
 begin
@@ -116,5 +116,60 @@ begin
 end
 
 end sec_5_1
+
+section sec_1_0
+
+-- Proposition 1.2 (Algebra of Continuous Functions)
+section algebra_of_continuous_fns
+
+theorem cont_of_add_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+  continuous_at (λ x, f x + g x) a :=
+begin
+  rw continuous_iff_seq_continuous at *,
+  intros x hx,
+  exact lim_add_eq_add_lim (hf x hx) (hg x hx),
+end
+
+theorem cont_of_sub_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+  continuous_at (λ x, f x - g x) a :=
+begin
+  rw continuous_iff_seq_continuous at *,
+  intros x hx,
+  exact lim_sub_eq_sub_lim (hf x hx) (hg x hx),
+end
+
+theorem cont_of_mul_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) :
+  continuous_at (λ x, f x * g x) a :=
+begin
+  rw continuous_iff_seq_continuous at *,
+  intros x hx,
+  exact lim_mul_eq_mul_lim (hf x hx) (hg x hx),
+end
+
+theorem cont_of_div_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g a) (hga : g a ≠ 0) :
+  continuous_at (λ x, f x / g x) a :=
+begin
+  rw continuous_iff_seq_continuous at *,
+  intros x hx,
+  refine lim_div_eq_div_lim (hf x hx) (hg x hx) hga,
+end
+
+end algebra_of_continuous_fns
+
+-- Proposition 1.3
+lemma cont_of_comp_cont {f g : ℝ → ℝ} {a : ℝ} (hf : continuous_at f a) (hg : continuous_at g (f a)) :
+  continuous_at (g ∘ f) a :=
+begin
+  rw continuous_iff_seq_continuous at *,
+  intros x hx,
+  refine hg (f ∘ x) _,
+  exact hf x hx,
+end
+
+end sec_1_0
+
+section sec_1_1
+
+end sec_1_1
 
 end continuity
