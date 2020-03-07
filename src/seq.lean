@@ -978,7 +978,7 @@ def is_peak_point : ℕ → Prop := λ j, ∀ k > j, a k < a j
 lemma not_peak_point (j : ℕ) : ¬is_peak_point j ↔ ∃ k > j, a k ≥ a j := begin
   unfold is_peak_point,
   push_neg,
-  simp,
+  simp only [exists_prop, gt_iff_lt, ge_iff_le, iff_self],
 end
 
 theorem exists_convergent_subseq_of_bdd (ha : seq_bdd a) :
@@ -997,8 +997,10 @@ begin
         rw finset.max_eq_none at h,
         exact h.symm,
       },
-      { have : m = option.iget hfin.to_finset.max + 1 := rfl,
-        rw [h, option.iget_some] at this,
+      { have : m = x + 1 := begin
+          dsimp [m],
+          rw h,
+        end,
         rw this at hk,
         refine lt_irrefl x (lt_of_lt_of_le hk _),
         exact finset.le_max_of_mem (set.finite.mem_to_finset.mpr hk') h,
@@ -1026,14 +1028,11 @@ begin
       exact classical.some (classical.some_spec (hm (n_aux k))),
     end,
     have hb : seq_increasing b := begin
-      intros x y hxy,
-      induction hxy with k hk ih,
-      { exact le_refl _, },
-      { refine le_trans ih _,
-        change a_aux (n_aux k) ≤ a_aux (n_aux (k + 1)),
-        cases classical.some_spec (hm (n_aux k)) with h2 h3,
-        exact h3,
-      }
+      refine monotone_of_monotone_nat _,
+      intro k,
+      change a_aux (n_aux k) ≤ a_aux (n_aux (k + 1)),
+      cases classical.some_spec (hm (n_aux k)) with h2 h3,
+      exact h3,
     end,
     have hb' : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb'],
@@ -1050,16 +1049,14 @@ begin
     end,
     let b := a ∘ n,
     have hb : seq_decreasing b := begin
-      intros x y hxy,
+      refine monotone_of_monotone_nat _,
+      intro k,
       erw neg_le_neg_iff,
-      induction hxy with k hk ih,
-      { exact le_refl _, },
-      { refine le_trans (le_of_lt _) ih,
-        change a (n (k + 1)) < a (n k),
-        cases classical.some_spec (hnfin (n_aux k)) with h₁ h₂,
-        refine h₂ _ _,
-        exact classical.some (classical.some_spec (hnfin (n k))),
-      }
+      refine le_of_lt _,
+      change a (n (k + 1)) < a (n k),
+      cases classical.some_spec (hnfin (n_aux k)) with h₁ h₂,
+      refine h₂ _ _,
+      exact classical.some (classical.some_spec (hnfin (n k))),
     end,
     have hb' : is_subseq_of a b := Exists.intro (psigma.mk n hn) rfl,
     existsi [b, hb'],
