@@ -31,4 +31,8 @@ Some Analysis I related stuff in Lean.
     + Some particular series (`x ^ n`, `1 / n`, `1 / n ^ 2` etc.)
     + Power series (WIP)
 - `src/continuity_def.lean` contains definitions related to continuity.
+    + Limits
+    + Continuity
 - `src/continuity.lean` contains examples and propositions
+    + Continuous iff sequentially continuous
+    + Intermediate Value Theorem (WIP)
