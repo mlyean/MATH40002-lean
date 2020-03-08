@@ -2,10 +2,9 @@ import seq
 import series_def
 import algebra.geom_sum
 
-namespace MATH40002
+namespace real_series
 
 open real_seq
-open real_series
 
 -- Chapter 4 : Series
 
@@ -467,4 +466,4 @@ end
 
 end sec_4_3
 
-end MATH40002
+end real_series

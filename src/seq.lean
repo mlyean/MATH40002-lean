@@ -298,13 +298,12 @@ begin
       ... = abs (a n * lb - b n * la) / (abs lb * abs (b n)) : by rw mul_comm (abs (b n)) (abs lb)
       ... = (abs (a n * lb - b n * la) / abs lb) * (1 / abs (b n)) : by rw div_mul_eq_div_mul_one_div 
       ... ≤ (abs (a n * lb - b n * la) / abs lb) * (2 / abs lb) : by {
-        refine mul_le_mul_of_nonneg_left _ (div_nonneg (abs_nonneg _) hlb'),
-        rw [div_le_div_iff (abs_pos_of_ne_zero hbn) hlb', one_mul],
-        rw [gt_iff_lt, div_lt_iff' two_pos] at hN₁,
-        exact le_of_lt hN₁,
+        refine mul_le_mul_of_nonneg_left (le_of_lt _) (div_nonneg (abs_nonneg _) hlb'),
+        rw [div_lt_div_iff (abs_pos_of_ne_zero hbn) hlb', one_mul],
+        rwa [gt_iff_lt, div_lt_iff' two_pos] at hN₁,
       }
       ... = abs (a n * lb - b n * la) * (2 / (abs lb * abs lb)) : by field_simp
-      ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, (abs x) * (2 / (abs lb * abs lb))) (by ring)
+      ... = abs ((a n - la) * lb + la * (lb - b n)) * (2 / (abs lb * abs lb)) : congr_arg (λ x, abs x * (2 / (abs lb * abs lb))) (by ring)
       ... < (ε * abs lb * abs lb / 2) * (2 / (abs lb * abs lb)) : mul_lt_mul_of_pos_right h_main (div_pos two_pos (mul_pos hlb' hlb'))
       ... = ε : by { field_simp [ne_of_gt hlb'], ring },
 end
