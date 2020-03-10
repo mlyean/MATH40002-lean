@@ -1,8 +1,8 @@
 [package]
 name = "MATH40002"
 version = "0.1"
-lean_version = "3.4.2"
+lean_version = "leanprover-community/lean:3.6.1"
 path = "src"
 
 [dependencies]
-mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "dd8da5165bd00b07408dbb87173e96908c6926a4"}
+mathlib = {git = "https://github.com/leanprover-community/mathlib", rev = "25df88424050f1e76e8708529c35480719762291"}

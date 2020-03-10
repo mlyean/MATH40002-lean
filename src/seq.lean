@@ -77,12 +77,12 @@ example : (λ n, (n + 2) / (n - 2)) ⟶ 1 := begin
   calc
     abs (((n : ℝ) + 2) / (n - 2) - 1) = abs (4 / ((n : ℝ) - 2)) : by {
         refine congr_arg abs _,
-        have : -2 + (n : ℝ) ≠ 0 := begin
-          erw [add_comm, sub_ne_zero],
+        have : (n : ℝ) - 2 ≠ 0 := begin
+          rw sub_ne_zero,
           exact ne_of_gt hn_gt_2,
         end,
         field_simp [this],
-        norm_num,
+        ring,
       }
       ... = 4 / ((n : ℝ) - 2) : abs_of_pos (div_pos four_pos hn_sub_2_pos)
       ... < 4 / ((n : ℝ) / 2) : by {
@@ -364,15 +364,10 @@ end
 section specific_limits
 
 lemma lim_of_neg_pow {k : ℕ} : (λ n, (1 : ℝ) / ((n + 1) ^ (k + 1))) ⟶ 0 := begin
-  have h : ∀ (n : ℕ), (n : ℝ) + 1 ≠ 0 := begin
-    intro n,
-    norm_cast,
-    exact nat.succ_ne_zero n,
-  end,
   conv {
     congr,
     { funext,
-      rw [pow_succ, ←one_div_mul_one_div, ←one_div_pow (h n)],
+      rw [pow_succ, ←one_div_mul_one_div, ←one_div_pow k],
     },
     { rw ←zero_mul (0 ^ k : ℝ) }
   },
@@ -415,20 +410,21 @@ end
 
 -- Remark 3.12
 example : (λ n, ((n + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6)) ⟶ 0 := begin
-  have hsimp : (λ (n : ℕ), (((↑n : ℝ) + 1) ^ 2 + 5) / ((↑n + 1) ^ 3 - (↑n + 1) + 6)) =
-    (λ n : ℕ, (1 / (↑n + 1) + 5 * (1 / (↑n + 1) ^ 3)) / (1 - (1 / (↑n + 1) ^ 2) + 6 * (1 / (↑n + 1) ^ 3))) :=
+  have hsimp₁ :
+    (λ (n : ℕ), (((n : ℝ) + 1) ^ 2 + 5) / ((n + 1) ^ 3 - (n + 1) + 6))
+      = (λ (n : ℕ), ((1 : ℝ) / (n + 1) + 5 * (1 / (n + 1) ^ 3)) / (1 - (1 / (n + 1) ^ 2) + 6 * (1 / (n + 1) ^ 3))) :=
   begin
     funext,
-    have hn : 1 + (n : ℝ) ≠ 0 := by { norm_cast, rw nat.one_add, exact nat.succ_ne_zero n, },
-    conv_rhs { rw ←mul_div_mul_right' _ _ (pow_ne_zero 3 hn) },
+    have hn : (n : ℝ) + 1 ≠ 0 := by { norm_cast, norm_num },
+    conv_rhs { rw ←mul_div_mul_right _ sorry (pow_ne_zero 3 hn), },
     refine congr (congr_arg has_div.div _) _,
     all_goals { field_simp [hn], ring }
   end,
-  have hsimp' : (0 : ℝ) = (0 + 5 * 0) / (1 - 0 + 6 * 0) := by norm_num,
+  have hsimp₂ : (0 : ℝ) = (0 + 5 * 0) / (1 - 0 + 6 * 0) := by norm_num,
   conv {
     congr,
-    { rw hsimp },
-    { rw hsimp' }
+    { rw hsimp₁ },
+    { rw hsimp₂ }
   },
   exact
     lim_div_eq_div_lim 
@@ -632,10 +628,7 @@ lemma lim_of_geom_zero {r : ℝ} (hr : r ∈ set.Ioo (0 : ℝ) (1 : ℝ)) : (λ 
   funext,
   have : r = 1 / (1 + x) := by { dsimp only [x], field_simp },
   rw this,
-  refine one_div_pow _ n,
-  dsimp only [x],
-  simp only [one_div_eq_inv, inv_eq_zero, ne.def, add_add_neg_cancel'_right, sub_eq_add_neg],
-  exact ne_of_gt hr_pos,
+  exact one_div_pow n,
 end
 
 lemma lim_of_geom_zero' {r : ℝ} (hr : r ∈ set.Ioo (-1 : ℝ) (1 : ℝ)) : (λ n, r ^ n) ⟶ 0 := begin
@@ -814,15 +807,15 @@ lemma bdd_below_of_cauchy {a : seq} : seq_cauchy a → seq_bdd_below a := seq_bd
 
 -- Some lemmas for Theorem 3.19
 lemma bdd_above_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_above a) : seq_bdd_above (a ∘ (+ k)) := 
-  bdd_above_subset (set.range_comp_subset_range (+ k) a) ha
+  bdd_above.mono (set.range_comp_subset_range (+ k) a) ha
 
 lemma bdd_below_of_tail {a : seq} (k : ℕ) (ha : seq_bdd_below a) : seq_bdd_below (a ∘ (+ k)) := 
-  bdd_below_subset (set.range_comp_subset_range (+ k) a) ha
+  bdd_below.mono (set.range_comp_subset_range (+ k) a) ha
 
 lemma bdd_above_iff_tail_bdd_above {a : seq} (k : ℕ) : seq_bdd_above a ↔ seq_bdd_above (a ∘ (+ k)) := begin
   split,
   { intro ha,
-    exact bdd_above_subset (set.range_comp_subset_range (+ k) a) ha,
+    exact bdd_above.mono (set.range_comp_subset_range (+ k) a) ha,
   },
   { rintro ⟨B, hB⟩,
     let head : finset ℝ := (finset.range (k + 1)).image a,

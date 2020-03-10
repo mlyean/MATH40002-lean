@@ -83,7 +83,7 @@ lemma harmonic_series_ineq (k : ℕ) : (partial_sum (λ n, 1 / (n + 1)) (2 ^ k))
     refine add_le_add hk _,
     have h : (2 ^ k : ℝ) ≠ 0 := (ne_of_lt (pow_pos zero_lt_two k)).symm,
     calc
-      1 / 2 = 2 ^ k * (1 / 2 ^ (k + 1)) : by rw [←div_mul_left 2 h, ←pow_succ, div_eq_mul_one_div (2 ^ k : ℝ) (2 ^ (k + 1) : ℝ)]
+      1 / 2 = 2 ^ k * (1 / 2 ^ (k + 1)) : by rw [←div_mul_left h, ←pow_succ, div_eq_mul_one_div (2 ^ k : ℝ) (2 ^ (k + 1) : ℝ)]
         ... = (finset.Ico (2 ^ k) (2 ^ (k + 1))).sum (λ (n : ℕ), (1 : ℝ) / (2 ^ (k + 1))) : by {
           rw [finset.sum_const _, finset.Ico.card],
           conv_rhs {
@@ -131,7 +131,7 @@ lemma partial_sum_one_div_mul_succ : partial_sum (λ n, 1 / ((n + 1) * (n + 2)))
     simp, },
   { rw [partial_sum_succ, hn, sub_add, sub_left_inj, nat.succ_eq_add_one, nat.cast_add, nat.cast_one],
     have : (n : ℝ) + 2 ≠ 0 := ne_of_gt (by { norm_cast, norm_num }),
-    rw [←div_mul_left ((n : ℝ) + 1) this, ←sub_div],
+    rw [←div_mul_left this, ←sub_div],
     conv_lhs {
       congr,
       { change (n : ℝ) + 2 + -1,
@@ -169,7 +169,10 @@ lemma partial_sum_one_div_pow_two : partial_sum (λ n, 1 / ((n + 1) ^ 2)) ≤ λ
     change (1 : ℝ) / (↑n + 2) ^ 2 ≤ 1 / ((↑n + 1) * (↑n + 2)),
     rw one_div_le_one_div (pow_pos hn' 2) (mul_pos hn hn'),
     norm_cast,
-    norm_num,
+    rw nat.pow_two,
+    rw mul_le_mul_right,
+    { norm_num },
+    { exact nat.succ_pos' }
   end,
   intro n,
   change partial_sum (λ n, (1 : ℝ) / (n + 1) ^ 2) n ≤ 2 - (1 : ℝ) / (n + 1),

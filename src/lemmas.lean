@@ -57,9 +57,13 @@ lemma range_add_eq_Ici (n : ℕ) : set.range (+ n) = set.Ici n := begin
   simp,
   split,
   { rintro ⟨y, hy⟩,
-    exact nat.le.intro hy,
+    subst hy,
+    exact nat.le_add_left n y,
   },
-  { exact nat.le.dest }
+  { intro h,
+    existsi x - n,
+    exact nat.sub_add_cancel h,
+  }
 end
 
 lemma range_add_subset_range_add {m n : ℕ} (h : m ≤ n) : set.range (+ n) ⊆ set.range (+ m) := begin
