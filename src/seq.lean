@@ -327,11 +327,8 @@ theorem lim_abs_eq_abs_lim {a : seq} {la : ℝ} (hla : a ⟶ la) : abs ∘ a ⟶
   exact lt_of_le_of_lt (abs_abs_sub_abs_le_abs_sub (a n) la) (hN n hn),
 end
 
-theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) := begin
-  induction n with n hn,
-  { exact lim_of_one },
-  { exact lim_mul_eq_mul_lim hla hn }
-end
+theorem lim_pow_eq_pow_lim {a : seq} {la : ℝ} {n : ℕ} (hla : a ⟶ la) : ((^ n) ∘ a) ⟶ (la ^ n) :=
+  nat.rec lim_of_one (λ n, lim_mul_eq_mul_lim hla) n
 
 end algebra_of_limits
 
@@ -550,8 +547,8 @@ begin
 end
 
 -- Problem Sheet 4: Question 3 (Squeeze Theorem)
-theorem squeeze_theorem {a b c : seq} {la : ℝ} (hla : a ⟶ la) (hlc : c ⟶ la) (hab : a ≤ b) (hbc : b ≤ c) :
-  b ⟶ la :=
+theorem squeeze_theorem {a b c : seq} {l : ℝ} (hla : a ⟶ l) (hlc : c ⟶ l) (hab : a ≤ b) (hbc : b ≤ c) :
+  b ⟶ l :=
 begin
   intros ε hε,
   cases hla (ε / 2) (half_pos hε) with Na hNa,
@@ -561,26 +558,26 @@ begin
   intros n hn,
   replace hNa := hNa n (le_trans (le_max_left _ _) hn),
   replace hNc := hNc n (le_trans (le_max_right _ _) hn),
-  have h₁ : abs (b n - la) ≤ (b n - a n) + abs (a n - la) := calc
-    abs (b n - la) ≤ abs (b n - a n) + abs (a n - la) : abs_sub_le (b n) (a n) la
-      ... = (b n - a n) + abs (a n - la) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hab n },
-  have h₂ : abs (b n - la) ≤ (c n - b n) + abs (c n - la) := calc
-    abs (b n - la) ≤ abs (b n - c n) + abs (c n - la) : abs_sub_le (b n) (c n) la
-      ... = abs (c n - b n) + abs (c n - la) : by rw abs_sub
-      ... = (c n - b n) + abs (c n - la) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hbc n },
-  have h₃ : 2 * abs (b n - la) ≤ 2 * (abs (a n - la) + abs (c n - la)) := calc
-    2 * abs (b n - la) = abs (b n - la) + abs (b n - la) : two_mul _
-      ... ≤ ((b n - a n) + abs (a n - la)) + ((c n - b n) + abs (c n - la)) : add_le_add h₁ h₂
-      ... = (c n - la) + (la - a n) + abs (a n - la) + abs (c n - la) : by ring
-      ... ≤ abs (c n - la) + abs (la - a n) + abs (a n - la) + abs (c n - la) : by {
+  have h₁ : abs (b n - l) ≤ (b n - a n) + abs (a n - l) := calc
+    abs (b n - l) ≤ abs (b n - a n) + abs (a n - l) : abs_sub_le (b n) (a n) l
+      ... = (b n - a n) + abs (a n - l) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hab n },
+  have h₂ : abs (b n - l) ≤ (c n - b n) + abs (c n - l) := calc
+    abs (b n - l) ≤ abs (b n - c n) + abs (c n - l) : abs_sub_le (b n) (c n) l
+      ... = abs (c n - b n) + abs (c n - l) : by rw abs_sub
+      ... = (c n - b n) + abs (c n - l) : by { rw abs_of_nonneg, rw [ge_iff_le, sub_nonneg], exact hbc n },
+  have h₃ : 2 * abs (b n - l) ≤ 2 * (abs (a n - l) + abs (c n - l)) := calc
+    2 * abs (b n - l) = abs (b n - l) + abs (b n - l) : two_mul _
+      ... ≤ ((b n - a n) + abs (a n - l)) + ((c n - b n) + abs (c n - l)) : add_le_add h₁ h₂
+      ... = (c n - l) + (l - a n) + abs (a n - l) + abs (c n - l) : by ring
+      ... ≤ abs (c n - l) + abs (l - a n) + abs (a n - l) + abs (c n - l) : by {
           repeat { refine add_le_add_right' _ },
           exact add_le_add (le_abs_self _) (le_abs_self _),
         }
-      ... = abs (c n - la) + abs (a n - la) + abs (a n - la) + abs (c n - la) : by rw abs_sub (a n) la
-      ... = 2 * (abs (a n - la) + abs (c n - la)) : by ring,
+      ... = abs (c n - l) + abs (a n - l) + abs (a n - l) + abs (c n - l) : by rw abs_sub (a n) l
+      ... = 2 * (abs (a n - l) + abs (c n - l)) : by ring,
   rw mul_le_mul_left zero_lt_two at h₃,
   calc
-    abs (b n - la) ≤ abs (a n - la) + abs (c n - la) : h₃
+    abs (b n - l) ≤ abs (a n - l) + abs (c n - l) : h₃
       ... < ε / 2 + ε / 2 : add_lt_add hNa hNc
       ... = ε : add_halves ε,
 end
