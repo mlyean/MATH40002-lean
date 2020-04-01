@@ -1276,4 +1276,32 @@ end
 
 end sec_3_3
 
+namespace limit_func
+
+local attribute [instance] classical.prop_decidable
+
+noncomputable def limit (a : seq) : option ℝ :=
+  if h : seq_converges a
+    then option.some (classical.some h)
+    else option.none
+
+-- Prove the equivalence of a ⟶ l and limit a = some l
+
+lemma limit_eq {a : seq} {l : ℝ} (hl : a ⟶ l) : limit a = some l :=
+  eq.trans (dif_pos ⟨l, hl⟩) (congr_arg _ (limit_unique (classical.some_spec _) hl))
+
+lemma limit_eq' {a : seq} {l : ℝ} (hl : limit a = some l) : a ⟶ l := begin
+  have h : seq_converges a := begin
+    by_contradiction h',
+    exact option.no_confusion (eq.trans hl.symm (dif_neg h')),
+  end,
+  replace hl := option.some.inj (eq.trans hl.symm (dif_pos h)),
+  rw hl,
+  exact classical.some_spec _,
+end
+
+lemma limit_zero : limit 0 = some 0 := limit_eq lim_of_zero
+
+end limit_func
+
 end real_seq
